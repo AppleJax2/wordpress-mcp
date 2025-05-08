@@ -23,6 +23,7 @@ const SitePolisherTool = require('./site-polisher-tool');
 const ContentAuditTool = require('./content-audit-tool');
 const AuthenticatedUserAnalyzerTool = require('./authenticated-user-analyzer-tool');
 const UserJourneyMapperTool = require('./user-journey-mapper-tool');
+const FormAnalysisTool = require('./form-analysis-tool');
 
 // Initialize all tools
 const siteInfoTool = new SiteInfoTool();
@@ -47,6 +48,7 @@ const sitePolisherTool = new SitePolisherTool();
 const contentAuditTool = new ContentAuditTool();
 const authenticatedUserAnalyzerTool = new AuthenticatedUserAnalyzerTool();
 const userJourneyMapperTool = new UserJourneyMapperTool();
+const formAnalysisTool = new FormAnalysisTool();
 
 // Export tools registry
 const wordpressTools = {
@@ -71,7 +73,8 @@ const wordpressTools = {
   [sitePolisherTool.name]: sitePolisherTool,
   [contentAuditTool.name]: contentAuditTool,
   [authenticatedUserAnalyzerTool.name]: authenticatedUserAnalyzerTool,
-  [userJourneyMapperTool.name]: userJourneyMapperTool
+  [userJourneyMapperTool.name]: userJourneyMapperTool,
+  [formAnalysisTool.name]: formAnalysisTool
 };
 
 // Export tools metadata for MCP integration
@@ -107,5 +110,6 @@ module.exports = {
   SitePolisherTool,
   ContentAuditTool,
   AuthenticatedUserAnalyzerTool,
-  UserJourneyMapperTool
+  UserJourneyMapperTool,
+  FormAnalysisTool
 }; 
