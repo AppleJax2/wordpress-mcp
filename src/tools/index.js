@@ -11,6 +11,7 @@ const ContentManagerTool = require('./content-manager-tool');
 const PluginManagerTool = require('./plugin-manager-tool');
 const MenuManagerTool = require('./menu-manager-tool');
 const WooCommerceManagerTool = require('./woocommerce-manager-tool');
+const DiviBuilderTool = require('./divi-builder-tool');
 
 // Initialize all tools
 const siteInfoTool = new SiteInfoTool();
@@ -23,6 +24,7 @@ const contentManagerTool = new ContentManagerTool();
 const pluginManagerTool = new PluginManagerTool();
 const menuManagerTool = new MenuManagerTool();
 const wooCommerceManagerTool = new WooCommerceManagerTool();
+const diviBuilderTool = new DiviBuilderTool();
 
 // Export tools registry
 const wordpressTools = {
@@ -35,7 +37,8 @@ const wordpressTools = {
   [contentManagerTool.name]: contentManagerTool,
   [pluginManagerTool.name]: pluginManagerTool,
   [menuManagerTool.name]: menuManagerTool,
-  [wooCommerceManagerTool.name]: wooCommerceManagerTool
+  [wooCommerceManagerTool.name]: wooCommerceManagerTool,
+  [diviBuilderTool.name]: diviBuilderTool
 };
 
 // Export tools metadata for MCP integration
@@ -59,5 +62,6 @@ module.exports = {
   ContentManagerTool,
   PluginManagerTool,
   MenuManagerTool,
-  WooCommerceManagerTool
+  WooCommerceManagerTool,
+  DiviBuilderTool
 }; 
