@@ -19,6 +19,8 @@ const SEOManagerTool = require('./seo-manager-tool');
 const SettingsManagerTool = require('./settings-manager-tool');
 const SiteMapperTool = require('./sitemap-tool');
 const DesignAnalyzerTool = require('./design-analyzer-tool');
+const SitePolisherTool = require('./site-polisher-tool');
+const ContentAuditTool = require('./content-audit-tool');
 
 // Initialize all tools
 const siteInfoTool = new SiteInfoTool();
@@ -39,6 +41,8 @@ const seoManagerTool = new SEOManagerTool();
 const settingsManagerTool = new SettingsManagerTool();
 const siteMapperTool = new SiteMapperTool();
 const designAnalyzerTool = new DesignAnalyzerTool();
+const sitePolisherTool = new SitePolisherTool();
+const contentAuditTool = new ContentAuditTool();
 
 // Export tools registry
 const wordpressTools = {
@@ -59,7 +63,9 @@ const wordpressTools = {
   [seoManagerTool.name]: seoManagerTool,
   [settingsManagerTool.name]: settingsManagerTool,
   [siteMapperTool.name]: siteMapperTool,
-  [designAnalyzerTool.name]: designAnalyzerTool
+  [designAnalyzerTool.name]: designAnalyzerTool,
+  [sitePolisherTool.name]: sitePolisherTool,
+  [contentAuditTool.name]: contentAuditTool
 };
 
 // Export tools metadata for MCP integration
@@ -91,5 +97,7 @@ module.exports = {
   SEOManagerTool,
   SettingsManagerTool,
   SiteMapperTool,
-  DesignAnalyzerTool
+  DesignAnalyzerTool,
+  SitePolisherTool,
+  ContentAuditTool
 }; 
