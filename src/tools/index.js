@@ -10,6 +10,7 @@ const MediaManagerTool = require('./media-manager-tool');
 const ContentManagerTool = require('./content-manager-tool');
 const PluginManagerTool = require('./plugin-manager-tool');
 const MenuManagerTool = require('./menu-manager-tool');
+const WooCommerceManagerTool = require('./woocommerce-manager-tool');
 
 // Initialize all tools
 const siteInfoTool = new SiteInfoTool();
@@ -21,6 +22,7 @@ const mediaManagerTool = new MediaManagerTool();
 const contentManagerTool = new ContentManagerTool();
 const pluginManagerTool = new PluginManagerTool();
 const menuManagerTool = new MenuManagerTool();
+const wooCommerceManagerTool = new WooCommerceManagerTool();
 
 // Export tools registry
 const wordpressTools = {
@@ -32,7 +34,8 @@ const wordpressTools = {
   [mediaManagerTool.name]: mediaManagerTool,
   [contentManagerTool.name]: contentManagerTool,
   [pluginManagerTool.name]: pluginManagerTool,
-  [menuManagerTool.name]: menuManagerTool
+  [menuManagerTool.name]: menuManagerTool,
+  [wooCommerceManagerTool.name]: wooCommerceManagerTool
 };
 
 // Export tools metadata for MCP integration
@@ -55,5 +58,6 @@ module.exports = {
   MediaManagerTool,
   ContentManagerTool,
   PluginManagerTool,
-  MenuManagerTool
+  MenuManagerTool,
+  WooCommerceManagerTool
 }; 

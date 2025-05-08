@@ -377,6 +377,220 @@ class WordPressAPI {
   }
   
   /**
+   * Get a single WooCommerce product
+   */
+  async getWooCommerceProduct(productId) {
+    try {
+      const response = await this.client.get(`/wc/v3/products/${productId}`);
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to fetch WooCommerce product', { error: error.message, productId });
+      throw error;
+    }
+  }
+  
+  /**
+   * Create a new WooCommerce product
+   */
+  async createWooCommerceProduct(productData) {
+    try {
+      const response = await this.client.post('/wc/v3/products', productData);
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to create WooCommerce product', { error: error.message });
+      throw error;
+    }
+  }
+  
+  /**
+   * Update an existing WooCommerce product
+   */
+  async updateWooCommerceProduct(productId, productData) {
+    try {
+      const response = await this.client.put(`/wc/v3/products/${productId}`, productData);
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to update WooCommerce product', { error: error.message, productId });
+      throw error;
+    }
+  }
+  
+  /**
+   * Delete a WooCommerce product
+   */
+  async deleteWooCommerceProduct(productId, force = false) {
+    try {
+      const response = await this.client.delete(`/wc/v3/products/${productId}`, {
+        params: { force }
+      });
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to delete WooCommerce product', { error: error.message, productId });
+      throw error;
+    }
+  }
+  
+  /**
+   * Get WooCommerce orders
+   */
+  async getWooCommerceOrders(params = {}) {
+    try {
+      const response = await this.client.get('/wc/v3/orders', { params });
+      return response;
+    } catch (error) {
+      logger.error('Failed to fetch WooCommerce orders', { error: error.message });
+      throw error;
+    }
+  }
+  
+  /**
+   * Get a single WooCommerce order
+   */
+  async getWooCommerceOrder(orderId) {
+    try {
+      const response = await this.client.get(`/wc/v3/orders/${orderId}`);
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to fetch WooCommerce order', { error: error.message, orderId });
+      throw error;
+    }
+  }
+  
+  /**
+   * Update an existing WooCommerce order
+   */
+  async updateWooCommerceOrder(orderId, orderData) {
+    try {
+      const response = await this.client.put(`/wc/v3/orders/${orderId}`, orderData);
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to update WooCommerce order', { error: error.message, orderId });
+      throw error;
+    }
+  }
+  
+  /**
+   * Delete a WooCommerce order
+   */
+  async deleteWooCommerceOrder(orderId, force = false) {
+    try {
+      const response = await this.client.delete(`/wc/v3/orders/${orderId}`, {
+        params: { force }
+      });
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to delete WooCommerce order', { error: error.message, orderId });
+      throw error;
+    }
+  }
+  
+  /**
+   * Get WooCommerce customers
+   */
+  async getWooCommerceCustomers(params = {}) {
+    try {
+      const response = await this.client.get('/wc/v3/customers', { params });
+      return response;
+    } catch (error) {
+      logger.error('Failed to fetch WooCommerce customers', { error: error.message });
+      throw error;
+    }
+  }
+  
+  /**
+   * Get a single WooCommerce customer
+   */
+  async getWooCommerceCustomer(customerId) {
+    try {
+      const response = await this.client.get(`/wc/v3/customers/${customerId}`);
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to fetch WooCommerce customer', { error: error.message, customerId });
+      throw error;
+    }
+  }
+  
+  /**
+   * Create a new WooCommerce customer
+   */
+  async createWooCommerceCustomer(customerData) {
+    try {
+      const response = await this.client.post('/wc/v3/customers', customerData);
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to create WooCommerce customer', { error: error.message });
+      throw error;
+    }
+  }
+  
+  /**
+   * Update an existing WooCommerce customer
+   */
+  async updateWooCommerceCustomer(customerId, customerData) {
+    try {
+      const response = await this.client.put(`/wc/v3/customers/${customerId}`, customerData);
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to update WooCommerce customer', { error: error.message, customerId });
+      throw error;
+    }
+  }
+  
+  /**
+   * Delete a WooCommerce customer
+   */
+  async deleteWooCommerceCustomer(customerId, force = false) {
+    try {
+      const response = await this.client.delete(`/wc/v3/customers/${customerId}`, {
+        params: { force }
+      });
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to delete WooCommerce customer', { error: error.message, customerId });
+      throw error;
+    }
+  }
+  
+  /**
+   * Get WooCommerce settings
+   */
+  async getWooCommerceSettings() {
+    try {
+      const response = await this.client.get('/wc/v3/settings');
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to fetch WooCommerce settings', { error: error.message });
+      throw error;
+    }
+  }
+  
+  /**
+   * Get a specific WooCommerce setting group
+   */
+  async getWooCommerceSettingGroup(group) {
+    try {
+      const response = await this.client.get(`/wc/v3/settings/${group}`);
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to fetch WooCommerce setting group', { error: error.message, group });
+      throw error;
+    }
+  }
+  
+  /**
+   * Update a specific WooCommerce setting
+   */
+  async updateWooCommerceSetting(group, id, settingData) {
+    try {
+      const response = await this.client.put(`/wc/v3/settings/${group}/${id}`, settingData);
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to update WooCommerce setting', { error: error.message, group, id });
+      throw error;
+    }
+  }
+  
+  /**
    * Get media items
    */
   async getMedia(params = {}) {
