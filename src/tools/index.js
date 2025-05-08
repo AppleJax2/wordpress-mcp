@@ -5,6 +5,7 @@ const SiteInfoTool = require('./site-info-tool');
 const CreatePageTool = require('./create-page-tool');
 const GeoDirectoryTool = require('./geodirectory-tool');
 const ThemeCustomizerTool = require('./theme-customizer-tool');
+const ThemeManagerTool = require('./theme-manager-tool');
 const AuthManagerTool = require('./auth-manager-tool');
 const MediaManagerTool = require('./media-manager-tool');
 const ContentManagerTool = require('./content-manager-tool');
@@ -13,12 +14,18 @@ const MenuManagerTool = require('./menu-manager-tool');
 const WooCommerceManagerTool = require('./woocommerce-manager-tool');
 const DiviBuilderTool = require('./divi-builder-tool');
 const WidgetManagerTool = require('./widget-manager-tool');
+const UserManagerTool = require('./user-manager-tool');
+const SEOManagerTool = require('./seo-manager-tool');
+const SettingsManagerTool = require('./settings-manager-tool');
+const SiteMapperTool = require('./sitemap-tool');
+const DesignAnalyzerTool = require('./design-analyzer-tool');
 
 // Initialize all tools
 const siteInfoTool = new SiteInfoTool();
 const createPageTool = new CreatePageTool();
 const geoDirectoryTool = new GeoDirectoryTool();
 const themeCustomizerTool = new ThemeCustomizerTool();
+const themeManagerTool = new ThemeManagerTool();
 const authManagerTool = new AuthManagerTool();
 const mediaManagerTool = new MediaManagerTool();
 const contentManagerTool = new ContentManagerTool();
@@ -27,6 +34,11 @@ const menuManagerTool = new MenuManagerTool();
 const wooCommerceManagerTool = new WooCommerceManagerTool();
 const diviBuilderTool = new DiviBuilderTool();
 const widgetManagerTool = new WidgetManagerTool();
+const userManagerTool = new UserManagerTool();
+const seoManagerTool = new SEOManagerTool();
+const settingsManagerTool = new SettingsManagerTool();
+const siteMapperTool = new SiteMapperTool();
+const designAnalyzerTool = new DesignAnalyzerTool();
 
 // Export tools registry
 const wordpressTools = {
@@ -34,6 +46,7 @@ const wordpressTools = {
   [createPageTool.name]: createPageTool,
   [geoDirectoryTool.name]: geoDirectoryTool,
   [themeCustomizerTool.name]: themeCustomizerTool,
+  [themeManagerTool.name]: themeManagerTool,
   [authManagerTool.name]: authManagerTool,
   [mediaManagerTool.name]: mediaManagerTool,
   [contentManagerTool.name]: contentManagerTool,
@@ -41,7 +54,12 @@ const wordpressTools = {
   [menuManagerTool.name]: menuManagerTool,
   [wooCommerceManagerTool.name]: wooCommerceManagerTool,
   [diviBuilderTool.name]: diviBuilderTool,
-  [widgetManagerTool.name]: widgetManagerTool
+  [widgetManagerTool.name]: widgetManagerTool,
+  [userManagerTool.name]: userManagerTool,
+  [seoManagerTool.name]: seoManagerTool,
+  [settingsManagerTool.name]: settingsManagerTool,
+  [siteMapperTool.name]: siteMapperTool,
+  [designAnalyzerTool.name]: designAnalyzerTool
 };
 
 // Export tools metadata for MCP integration
@@ -60,6 +78,7 @@ module.exports = {
   CreatePageTool,
   GeoDirectoryTool,
   ThemeCustomizerTool,
+  ThemeManagerTool,
   AuthManagerTool,
   MediaManagerTool,
   ContentManagerTool,
@@ -67,5 +86,10 @@ module.exports = {
   MenuManagerTool,
   WooCommerceManagerTool,
   DiviBuilderTool,
-  WidgetManagerTool
+  WidgetManagerTool,
+  UserManagerTool,
+  SEOManagerTool,
+  SettingsManagerTool,
+  SiteMapperTool,
+  DesignAnalyzerTool
 }; 
