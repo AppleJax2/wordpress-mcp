@@ -213,6 +213,33 @@ app.listen(PORT, '0.0.0.0', () => {
   }
 });
 
+// Initialize connection manager
+const connectionManager = require('./api/connection-manager');
+
+// Log connection pool status
+logger.info('Connection pool initialized', connectionManager.getStats());
+
+// Set up periodic cleanup of idle connections to prevent "max client connections" errors
+// Clean up idle connections based on configured interval
+const cleanupIntervalMs = config.connections.cleanupIntervalMs;
+const maxIdleTimeMs = config.connections.connectionTimeout * 3; // 3x the connection timeout
+
+logger.info(`Setting up connection cleanup every ${cleanupIntervalMs/1000} seconds, max idle time: ${maxIdleTimeMs/1000} seconds`);
+
+const connectionCleanupInterval = setInterval(async () => {
+  try {
+    const closedCount = await connectionManager.cleanupIdleConnections(maxIdleTimeMs);
+    if (closedCount > 0) {
+      logger.info(`Periodic cleanup closed ${closedCount} idle connections`, connectionManager.getStats());
+    }
+  } catch (error) {
+    logger.error('Error during periodic connection cleanup:', { error: error.message });
+  }
+}, cleanupIntervalMs);
+
+// Make sure the interval doesn't keep the process alive
+connectionCleanupInterval.unref();
+
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
   logger.error('Unhandled Promise Rejection:', { reason });
@@ -223,4 +250,35 @@ process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception:', { error: error.message, stack: error.stack });
   // Give logger a chance to flush before exiting
   setTimeout(() => process.exit(1), 1000);
+});
+
+// Handle graceful shutdown
+process.on('SIGINT', async () => {
+  logger.info('Received SIGINT, shutting down gracefully...');
+  
+  try {
+    // Close all browser connections
+    await connectionManager.closeAllBrowsers();
+    logger.info('All browser connections closed');
+  } catch (error) {
+    logger.error('Error closing browser connections:', { error: error.message });
+  }
+  
+  // Exit process
+  setTimeout(() => process.exit(0), 1000);
+});
+
+process.on('SIGTERM', async () => {
+  logger.info('Received SIGTERM, shutting down gracefully...');
+  
+  try {
+    // Close all browser connections
+    await connectionManager.closeAllBrowsers();
+    logger.info('All browser connections closed');
+  } catch (error) {
+    logger.error('Error closing browser connections:', { error: error.message });
+  }
+  
+  // Exit process
+  setTimeout(() => process.exit(0), 1000);
 }); 

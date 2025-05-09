@@ -26,6 +26,14 @@ module.exports = {
     }
   },
   
+  // Connection Configuration
+  connections: {
+    maxApiConnections: parseInt(process.env.MAX_API_CONNECTIONS || '3', 10),
+    maxBrowserConnections: parseInt(process.env.MAX_BROWSER_CONNECTIONS || '1', 10),
+    connectionTimeout: parseInt(process.env.CONNECTION_TIMEOUT || '10000', 10),
+    cleanupIntervalMs: parseInt(process.env.CLEANUP_INTERVAL_MS || '120000', 10) // 2 minutes default
+  },
+  
   // Logging Configuration
   logging: {
     level: process.env.LOG_LEVEL || 'info',

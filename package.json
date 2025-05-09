@@ -8,7 +8,9 @@
     "dev": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "publish:smithery": "node publish-to-smithery.js",
-    "start:smithery": "npx @smithery/cli@latest run wordpress-mcp-server"
+    "start:smithery": "npx @smithery/cli@latest run wordpress-mcp-server",
+    "login:smithery": "npx @smithery/cli@latest login --client cursor",
+    "optimize": "node src/utils/connection-optimizer.js"
   },
   "keywords": [
     "wordpress",

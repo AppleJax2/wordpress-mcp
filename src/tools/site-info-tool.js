@@ -9,8 +9,6 @@ const WordPressBrowser = require('../browser/browser');
 class SiteInfoTool extends BaseTool {
   constructor() {
     super('wordpress_site_info', 'Get comprehensive information about the WordPress site');
-    this.api = new WordPressAPI();
-    this.browser = new WordPressBrowser();
   }
   
   /**
@@ -32,11 +30,14 @@ class SiteInfoTool extends BaseTool {
         includeSettings = true
       } = params;
       
+      // Get API client from connection pool
+      const api = this.getApiClient();
+      
       // Get site information from WordPress API
-      const siteInfo = await this.api.getSiteInfo();
+      const siteInfo = await api.getSiteInfo();
       
       // Get current user information
-      const currentUser = await this.api.getCurrentUser();
+      const currentUser = await api.getCurrentUser();
       
       // Create base response
       const result = {
@@ -63,7 +64,7 @@ class SiteInfoTool extends BaseTool {
       // Add theme information if requested
       if (includeThemes) {
         try {
-          const themes = await this.api.getThemes();
+          const themes = await api.getThemes();
           result.data.themes = {
             active: Object.values(themes).find(theme => theme.active),
             installed: Object.keys(themes),
@@ -78,7 +79,7 @@ class SiteInfoTool extends BaseTool {
       // Add plugin information if requested
       if (includePlugins) {
         try {
-          const plugins = await this.api.getPlugins();
+          const plugins = await api.getPlugins();
           result.data.plugins = {
             active: plugins.filter(plugin => plugin.status === 'active').map(p => p.name),
             inactive: plugins.filter(plugin => plugin.status !== 'active').map(p => p.name),
@@ -93,15 +94,18 @@ class SiteInfoTool extends BaseTool {
       // Add user information if requested (anonymized)
       if (includeUsers) {
         try {
+          // Get browser client from connection pool
+          const browser = this.getBrowserClient();
+          
           // We'll use browser automation for this as the REST API might not provide all roles
-          await this.browser.launch();
-          await this.browser.login();
+          await browser.launch();
+          await browser.login();
           
           // Navigate to the users page and extract information
-          await this.browser.navigateToAdminPage('/users.php');
+          await browser.navigateToAdminPage('/users.php');
           
           // Get user role counts using page evaluation
-          const roleStats = await this.browser.page.evaluate(() => {
+          const roleStats = await browser.page.evaluate(() => {
             const roleLinks = document.querySelectorAll('.subsubsub a');
             const stats = {};
             
@@ -125,8 +129,7 @@ class SiteInfoTool extends BaseTool {
             totalCount: Object.values(roleStats).reduce((sum, count) => sum + count, 0)
           };
           
-          // Close the browser
-          await this.browser.close();
+          // Browser will be released at the end of execution
         } catch (error) {
           this.logger.warn('Could not fetch user information', { error: error.message });
           result.data.users = { error: 'Could not fetch user information' };
@@ -137,11 +140,11 @@ class SiteInfoTool extends BaseTool {
       if (includeStats) {
         try {
           // Get posts count
-          const posts = await this.api.getPosts({ per_page: 1 });
+          const posts = await api.getPosts({ per_page: 1 });
           const totalPosts = parseInt(posts.headers?.['x-wp-total'] || '0', 10);
           
           // Get pages count
-          const pages = await this.api.getPages({ per_page: 1 });
+          const pages = await api.getPages({ per_page: 1 });
           const totalPages = parseInt(pages.headers?.['x-wp-total'] || '0', 10);
           
           result.data.contentStats = {
@@ -153,7 +156,7 @@ class SiteInfoTool extends BaseTool {
           // Check if WooCommerce is active
           if (result.data.plugins?.active?.some(p => p.toLowerCase().includes('woocommerce'))) {
             try {
-              const products = await this.api.getWooCommerceProducts({ per_page: 1 });
+              const products = await api.getWooCommerceProducts({ per_page: 1 });
               const totalProducts = parseInt(products.headers?.['x-wp-total'] || '0', 10);
               result.data.contentStats.woocommerce = {
                 products: totalProducts
@@ -167,7 +170,7 @@ class SiteInfoTool extends BaseTool {
           // Check if GeoDirectory is active
           if (result.data.plugins?.active?.some(p => p.toLowerCase().includes('geodirectory'))) {
             try {
-              const listings = await this.api.getGeoDirectoryListings({ per_page: 1 });
+              const listings = await api.getGeoDirectoryListings({ per_page: 1 });
               const totalListings = parseInt(listings.headers?.['x-wp-total'] || '0', 10);
               result.data.contentStats.geodirectory = {
                 listings: totalListings
@@ -186,17 +189,20 @@ class SiteInfoTool extends BaseTool {
       // Add site settings if requested
       if (includeSettings) {
         try {
+          // Get browser client from connection pool (or reuse existing)
+          const browser = this._browserClient || this.getBrowserClient();
+          
           // We need to use browser automation for this
-          if (!this.browser.isLoggedIn) {
-            await this.browser.launch();
-            await this.browser.login();
+          if (!browser.isLoggedIn) {
+            await browser.launch();
+            await browser.login();
           }
           
           // Navigate to the general settings page
-          await this.browser.navigateToAdminPage('/options-general.php');
+          await browser.navigateToAdminPage('/options-general.php');
           
           // Extract settings using page evaluation
-          const generalSettings = await this.browser.page.evaluate(() => {
+          const generalSettings = await browser.page.evaluate(() => {
             const settings = {};
             const fields = ['blogname', 'blogdescription', 'admin_email', 'siteurl', 'home', 'users_can_register', 'default_role', 'WPLANG', 'timezone_string', 'date_format', 'time_format'];
             
@@ -220,10 +226,7 @@ class SiteInfoTool extends BaseTool {
             general: generalSettings
           };
           
-          // Close the browser if it was opened just for this
-          if (!includeUsers) {
-            await this.browser.close();
-          }
+          // Browser will be released at the end of execution
         } catch (error) {
           this.logger.warn('Could not fetch site settings', { error: error.message });
           result.data.settings = { error: 'Could not fetch site settings' };
@@ -234,10 +237,8 @@ class SiteInfoTool extends BaseTool {
     } catch (error) {
       return this.handleError(error);
     } finally {
-      // Make sure to close the browser if it's still open
-      if (this.browser && this.browser.browser) {
-        await this.browser.close();
-      }
+      // Release connections back to the pool
+      await this.releaseConnections();
     }
   }
   

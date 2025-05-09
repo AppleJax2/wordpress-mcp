@@ -11,6 +11,12 @@ const readline = require('readline');
 const fetch = require('node-fetch');
 const url = 'http://localhost:3001';
 
+// Create an HTTP agent to enable connection reuse
+const http = require('http');
+const https = require('https');
+const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 5 });
+const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 5 });
+
 // Debug mode - set to true to see more information
 const DEBUG = true;
 
@@ -58,6 +64,15 @@ const rl = readline.createInterface({
 async function fetchWithRetry(url, options = {}, retries = MAX_RETRIES) {
   try {
     debug(`Fetching ${url}`);
+    
+    // Add appropriate agent based on URL protocol
+    if (!options.agent) {
+      options.agent = url.startsWith('https://') ? httpsAgent : httpAgent;
+    }
+    
+    // Add timeout
+    options.timeout = options.timeout || 10000; // 10 second timeout
+    
     const response = await fetch(url, options);
     
     if (!response.ok) {
@@ -67,8 +82,10 @@ async function fetchWithRetry(url, options = {}, retries = MAX_RETRIES) {
     return response;
   } catch (error) {
     if (retries > 0) {
-      debug(`Fetch failed, retrying... (${retries} retries left):`, error.message);
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+      // Exponential backoff
+      const delay = RETRY_DELAY * (MAX_RETRIES - retries + 1);
+      debug(`Fetch failed, retrying in ${delay}ms... (${retries} retries left):`, error.message);
+      await new Promise(resolve => setTimeout(resolve, delay));
       return fetchWithRetry(url, options, retries - 1);
     }
     throw error;

@@ -19,18 +19,11 @@ const FILES_TO_INCLUDE = [
   '.env.example'
 ];
 
-// Create a temporary .env.example if it doesn't exist
+// Use our already created .env.example file
 if (!fs.existsSync(path.join(__dirname, '.env.example'))) {
-  console.log('Creating .env.example file...');
-  const envExample = `WP_SITE_URL=https://your-wordpress-site.com
-WP_USERNAME=your_username
-WP_APP_PASSWORD=your_app_password
-PORT=3001
-NODE_ENV=production
-HEADLESS=true
-SLOWMO=0
-`;
-  fs.writeFileSync(path.join(__dirname, '.env.example'), envExample);
+  console.error('Error: .env.example file is missing. Publication may fail.');
+} else {
+  console.log('.env.example file exists, continuing...');
 }
 
 // Run the Smithery publish command
@@ -39,12 +32,30 @@ console.log(`Publishing ${PACKAGE_NAME} to Smithery...`);
 const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const includeArgs = FILES_TO_INCLUDE.flatMap(file => ['--include', file]);
 
-// Adjusting the arguments for npx.cmd on Windows
-const smitheryArgs = ['@smithery/cli@latest', 'publish', '--client', 'cursor', ...includeArgs];
+// Adjusting the arguments for npx.cmd on Windows with additional options for reliable publishing
+const smitheryArgs = [
+  '@smithery/cli@latest', 
+  'publish', 
+  '--client', 'cursor',
+  '--json',  // Use JSON format for better error handling
+  '--resource-constraints', 'low',  // Specify low resource requirements
+  '--timeout', '60',  // 60 second timeout for operations
+  ...includeArgs
+];
+
+// Get API key from environment or prompt user
+const apiKey = process.env.SMITHERY_API_KEY;
+if (apiKey) {
+  smitheryArgs.push('--key', apiKey);
+  console.log('Using API key from environment variables');
+} else {
+  console.log('No API key found in environment variables. You may need to log in first with: npx @smithery/cli@latest login --client cursor');
+}
 
 const publish = spawn(npxCommand, smitheryArgs, {
   stdio: 'inherit',
-  shell: process.platform === 'win32' // Using shell option for Windows might help
+  shell: process.platform === 'win32', // Using shell option for Windows might help
+  timeout: 90000 // 90 second timeout for the entire process
 });
 
 publish.on('error', (error) => {
