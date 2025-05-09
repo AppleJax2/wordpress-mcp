@@ -42,6 +42,7 @@ const smitheryArgs = [
   '--json',  // Use JSON format for better error handling
   '--resource-constraints', 'low',  // Specify low resource requirements
   '--timeout', '60',  // 60 second timeout for operations
+  '--verbose', // Add verbose flag for more details
   ...includeArgs
 ];
 
