@@ -3,14 +3,15 @@ version: 1.0.0
 description: WordPress MCP Server for automation and management using browser automation and API integration
 
 # Protocol to communicate with the server
-protocol: stdio
+protocol: stdio # This describes the MCP protocol for tools, separate from deployment type
 
-# Command to start the server
+# Command to start the server for Smithery Hosted Deployment
 startCommand:
-  type: stdio
-  commandFunction: 
-    command: node
-    args: [mcp-wrapper.js]
+  type: http # Smithery deployment expects an HTTP endpoint
+  command: node mcp-wrapper.js # The command that starts the HTTP server via the wrapper
+  port: ${PORT} # Smithery will inject the port it assigns
+  healthCheckPath: / # Endpoint to check if the server is alive
+  readinessCheckPath: / # Endpoint to check if server is ready for traffic
 
 # Environment variables required by the server
 configSchema:
