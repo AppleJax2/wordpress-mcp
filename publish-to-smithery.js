@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Configuration
-const PACKAGE_NAME = 'wordpress-mcp-server';
+const PACKAGE_NAME = 'wordpress-mcp';
 const FILES_TO_INCLUDE = [
   'src/**/*',
   'mcp-wrapper.js',

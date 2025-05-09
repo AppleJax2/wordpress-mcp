@@ -1,5 +1,5 @@
 {
-  "name": "wordpress-mcp-server",
+  "name": "wordpress-mcp",
   "version": "1.0.0",
   "description": "MCP server for WordPress automation and management using browser automation and API integration",
   "main": "src/index.js",
@@ -8,7 +8,7 @@
     "dev": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "publish:smithery": "node publish-to-smithery.js",
-    "start:smithery": "npx @smithery/cli@latest run wordpress-mcp-server",
+    "start:smithery": "npx @smithery/cli@latest run wordpress-mcp",
     "login:smithery": "npx @smithery/cli@latest login --client cursor",
     "optimize": "node src/utils/connection-optimizer.js"
   },
@@ -39,7 +39,7 @@
     "nodemon": "^3.0.1"
   },
   "smithery": {
-    "package": "wordpress-mcp-server",
+    "package": "wordpress-mcp",
     "command": "node",
     "args": [
       "mcp-wrapper.js"

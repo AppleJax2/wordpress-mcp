@@ -1,5 +1,5 @@
 {
-  "name": "wordpress-mcp-server",
+  "name": "wordpress-mcp",
   "version": "1.0.0",
   "description": "WordPress MCP Server for automation and management using browser automation and API integration",
   "main": "mcp-wrapper.js",
