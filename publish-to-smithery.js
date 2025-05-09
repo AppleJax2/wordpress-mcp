@@ -45,14 +45,10 @@ const smitheryArgs = [
   ...includeArgs
 ];
 
-// Get API key from environment or prompt user
-const apiKey = process.env.SMITHERY_API_KEY;
-if (apiKey) {
-  smitheryArgs.push('--key', apiKey);
-  console.log('Using API key from environment variables');
-} else {
-  console.log('No API key found in environment variables. You may need to log in first with: npx @smithery/cli@latest login --client cursor');
-}
+// Use hardcoded API key
+const apiKey = 'edb5b7f0-1d65-4121-895d-98c59cd7a0f8';
+smitheryArgs.push('--key', apiKey);
+console.log('Using API key from script');
 
 const publish = spawn(npxCommand, smitheryArgs, {
   stdio: 'inherit',

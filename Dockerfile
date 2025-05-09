@@ -32,9 +32,8 @@ COPY package*.json ./
 FROM base AS dependencies
 WORKDIR /app
 COPY package*.json ./
-# Use npm cache mount to speed up installs and reduce image size
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --only=production --no-audit --prefer-offline
+# Standard npm install without cache mount for better compatibility
+RUN npm ci --only=production --no-audit
 
 # Build the final image
 FROM base
