@@ -43,10 +43,8 @@
     "version": "1.0.0",
     "description": "WordPress MCP Server for automation and management",
     "startCommand": {
-      "command": "node",
-      "args": [
-        "mcp-wrapper.js"
-      ],
+      "type": "stdio",
+      "commandFunction": "node mcp-wrapper.js",
       "env": {
         "PORT": "3001",
         "MAX_API_CONNECTIONS": "3",
