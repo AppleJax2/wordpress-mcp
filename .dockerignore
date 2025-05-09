@@ -1,0 +1,24 @@
+# Git files
+.git
+.gitignore
+
+# Build artifacts
+node_modules
+npm-debug.log
+
+# Environment
+.env
+
+# Editor specific files
+.vscode
+.idea
+
+# Temporary files
+*.log
+*.tmp
+temp/
+
+# Local files
+README.md
+CURSOR_INTEGRATION.md
+publish-to-smithery.js
