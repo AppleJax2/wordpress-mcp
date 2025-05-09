@@ -1,0 +1,65 @@
+name: wordpress-mcp
+version: 1.0.0
+description: WordPress MCP Server for automation and management using browser automation and API integration
+
+# Protocol to communicate with the server
+protocol: stdio
+
+# Command to start the server
+startCommand: ["node", "mcp-wrapper.js"]
+
+# Environment variables required by the server
+configSchema:
+  type: object
+  properties:
+    WP_SITE_URL:
+      type: string
+      description: URL of the WordPress site (e.g., https://example.com)
+      default: https://visitingvet.com
+    WP_USERNAME:
+      type: string
+      description: WordPress admin username
+    WP_APP_PASSWORD:
+      type: string
+      description: WordPress application password
+      format: password
+    PORT:
+      type: number
+      description: Port for the local server
+      default: 3001
+    NODE_ENV:
+      type: string
+      description: Environment (development or production)
+      enum: [development, production]
+      default: production
+    HEADLESS:
+      type: boolean
+      description: Run browser in headless mode
+      default: true
+    SLOWMO:
+      type: number
+      description: Slow motion delay for browser automation (ms)
+      default: 0
+    MAX_API_CONNECTIONS:
+      type: number
+      description: Maximum number of API connections
+      default: 3
+    MAX_BROWSER_CONNECTIONS:
+      type: number
+      description: Maximum number of browser connections
+      default: 1
+  required:
+    - WP_SITE_URL
+    - WP_USERNAME
+    - WP_APP_PASSWORD
+
+# Resource requirements for the server
+resources:
+  memory: low
+  cpu: low
+
+# Tool categories for organization
+toolCategories:
+  - name: WordPress Management
+    description: Tools for managing and automating WordPress sites
+    tools: ["*"]
