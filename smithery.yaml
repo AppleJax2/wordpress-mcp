@@ -6,7 +6,9 @@ description: WordPress MCP Server for automation and management using browser au
 protocol: stdio
 
 # Command to start the server
-startCommand: ["node", "mcp-wrapper.js"]
+startCommand:
+  command: node
+  args: [mcp-wrapper.js]
 
 # Environment variables required by the server
 configSchema:
