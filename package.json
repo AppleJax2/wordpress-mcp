@@ -44,6 +44,7 @@
     "args": [
       "mcp-wrapper.js"
     ],
+    "protocol": "stdio",
     "description": "WordPress MCP Server for automation and management"
   }
 }

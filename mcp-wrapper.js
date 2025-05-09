@@ -11,11 +11,21 @@ const readline = require('readline');
 const fetch = require('node-fetch');
 const url = 'http://localhost:3001';
 
-// Create an HTTP agent to enable connection reuse
+// Create an HTTP agent to enable connection reuse with better configuration
 const http = require('http');
 const https = require('https');
-const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 5 });
-const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 5 });
+const httpAgent = new http.Agent({ 
+  keepAlive: true, 
+  maxSockets: 5,
+  keepAliveMsecs: 3000,
+  timeout: 10000
+});
+const httpsAgent = new https.Agent({ 
+  keepAlive: true, 
+  maxSockets: 5,
+  keepAliveMsecs: 3000,
+  timeout: 10000
+});
 
 // Debug mode - set to true to see more information
 const DEBUG = true;
@@ -44,14 +54,36 @@ const startupNotification = {
 // Print immediately so Cursor has something to initialize with
 console.log(JSON.stringify(startupNotification));
 
-// Retry configuration
-const MAX_RETRIES = 5;
-const RETRY_DELAY = 1000; // ms
+// Retry configuration with exponential backoff
+const MAX_RETRIES = 7;
+const INITIAL_RETRY_DELAY = 500; // ms
+const MAX_RETRY_DELAY = 10000; // ms
+
+// Helper function to wait with jitter for more efficient retries
+function getRetryDelay(attempt) {
+  // Exponential backoff with jitter to prevent thundering herd
+  const exponentialDelay = Math.min(
+    INITIAL_RETRY_DELAY * Math.pow(2, attempt),
+    MAX_RETRY_DELAY
+  );
+  // Add random jitter of up to 30%
+  const jitter = exponentialDelay * 0.3 * Math.random();
+  return exponentialDelay + jitter;
+}
 
 // Global error handler to prevent crashes
 process.on('uncaughtException', (err) => {
   debug('UNCAUGHT EXCEPTION:', err);
-  // Don't exit - keep the process alive
+  // Log to stderr but don't exit - keep the process alive
+  console.error(`[ERROR] Uncaught exception: ${err.message}`);
+  console.error(err.stack);
+});
+
+// Handle promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  debug('UNHANDLED REJECTION:', reason);
+  // Log to stderr but don't exit
+  console.error(`[ERROR] Unhandled rejection: ${reason}`);
 });
 
 // Set up readline interface to read from stdin
@@ -60,36 +92,52 @@ const rl = readline.createInterface({
   output: null
 });
 
-// Try to fetch with retries
+// Try to fetch with smarter retries
 async function fetchWithRetry(url, options = {}, retries = MAX_RETRIES) {
-  try {
-    debug(`Fetching ${url}`);
-    
-    // Add appropriate agent based on URL protocol
-    if (!options.agent) {
-      options.agent = url.startsWith('https://') ? httpsAgent : httpAgent;
+  let lastError;
+  let attempt = 0;
+  
+  while (attempt <= retries) {
+    try {
+      debug(`Fetching ${url} (attempt ${attempt + 1}/${retries + 1})`);
+      
+      // Add appropriate agent based on URL protocol
+      if (!options.agent) {
+        options.agent = url.startsWith('https://') ? httpsAgent : httpAgent;
+      }
+      
+      // Add timeout if not specified
+      options.timeout = options.timeout || 10000; // 10 second timeout
+      
+      const response = await fetch(url, options);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+      }
+      
+      return response;
+    } catch (error) {
+      lastError = error;
+      
+      // Don't retry on certain errors
+      if (error.code === 'ECONNREFUSED' && attempt >= 2) {
+        debug(`Server connection refused after ${attempt + 1} attempts, service may be down`);
+        break;
+      }
+      
+      if (attempt < retries) {
+        const delay = getRetryDelay(attempt);
+        debug(`Fetch failed, retrying in ${Math.round(delay)}ms... (${retries - attempt} retries left):`, error.message);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        attempt++;
+      } else {
+        debug(`Fetch failed after ${retries + 1} attempts:`, error.message);
+        break;
+      }
     }
-    
-    // Add timeout
-    options.timeout = options.timeout || 10000; // 10 second timeout
-    
-    const response = await fetch(url, options);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
-    }
-    
-    return response;
-  } catch (error) {
-    if (retries > 0) {
-      // Exponential backoff
-      const delay = RETRY_DELAY * (MAX_RETRIES - retries + 1);
-      debug(`Fetch failed, retrying in ${delay}ms... (${retries} retries left):`, error.message);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return fetchWithRetry(url, options, retries - 1);
-    }
-    throw error;
   }
+  
+  throw lastError;
 }
 
 // Listen for input from stdin (JSON-RPC requests from Cursor)
@@ -221,17 +269,57 @@ rl.on('line', async (line) => {
   }
 });
 
-// Handle process termination
+// Handle process termination with graceful shutdown
 process.on('SIGINT', () => {
-  debug('Received SIGINT, exiting...');
+  debug('Received SIGINT, gracefully shutting down...');
+  // Perform cleanup
   rl.close();
-  process.exit(0);
+  
+  // Notify any client that we're shutting down
+  try {
+    const shutdownNotification = {
+      jsonrpc: "2.0",
+      method: "system/shutdown",
+      params: {
+        reason: "Server is shutting down gracefully"
+      }
+    };
+    console.log(JSON.stringify(shutdownNotification));
+  } catch (err) {
+    debug('Error sending shutdown notification:', err);
+  }
+  
+  // Allow any pending operations to complete (max 3 seconds)
+  setTimeout(() => {
+    debug('Exiting...');
+    process.exit(0);
+  }, 3000);
 });
 
 process.on('SIGTERM', () => {
-  debug('Received SIGTERM, exiting...');
+  debug('Received SIGTERM, gracefully shutting down...');
+  // Perform cleanup
   rl.close();
-  process.exit(0);
+  
+  // Notify any client that we're shutting down
+  try {
+    const shutdownNotification = {
+      jsonrpc: "2.0",
+      method: "system/shutdown",
+      params: {
+        reason: "Server is shutting down gracefully"
+      }
+    };
+    console.log(JSON.stringify(shutdownNotification));
+  } catch (err) {
+    debug('Error sending shutdown notification:', err);
+  }
+  
+  // Allow any pending operations to complete (max 3 seconds)
+  setTimeout(() => {
+    debug('Exiting...');
+    process.exit(0);
+  }, 3000);
 });
 
 // Keep the process alive

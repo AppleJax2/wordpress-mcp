@@ -1,24 +1,49 @@
 # Git files
 .git
 .gitignore
+.github
 
 # Build artifacts
 node_modules
 npm-debug.log
+dist
+build
 
 # Environment
 .env
+.env.*
+!.env.example
 
 # Editor specific files
 .vscode
 .idea
+*.sublime*
 
 # Temporary files
 *.log
 *.tmp
 temp/
+logs/
+coverage/
 
 # Local files
 README.md
 CURSOR_INTEGRATION.md
 publish-to-smithery.js
+*.test.js
+*.spec.js
+tests/
+__tests__/
+jest.config.js
+*.md
+!LICENSE
+
+# Docker files
+.dockerignore
+Dockerfile*
+docker-compose*
+
+# Debug files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
