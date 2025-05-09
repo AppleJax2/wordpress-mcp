@@ -42,10 +42,19 @@
     "name": "ididi/wordpress-mcp",
     "version": "1.0.0",
     "description": "WordPress MCP Server for automation and management",
-    "command": "node",
-    "args": [
-      "mcp-wrapper.js"
-    ],
+    "startCommand": {
+      "command": "node",
+      "args": [
+        "mcp-wrapper.js"
+      ],
+      "env": {
+        "PORT": "3001",
+        "MAX_API_CONNECTIONS": "3",
+        "MAX_BROWSER_CONNECTIONS": "1",
+        "CONNECTION_TIMEOUT": "10000",
+        "SMITHERY": "true"
+      }
+    },
     "protocol": "stdio"
   }
 }

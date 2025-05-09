@@ -10,11 +10,11 @@ startCommand:
   command: node
   args:
     - mcp-wrapper.js
-  environment:
-    PORT: "3001"
-    MAX_API_CONNECTIONS: "3"
-    MAX_BROWSER_CONNECTIONS: "1"
-    CONNECTION_TIMEOUT: "10000"
+  env:
+    PORT: 3001
+    MAX_API_CONNECTIONS: 3
+    MAX_BROWSER_CONNECTIONS: 1
+    CONNECTION_TIMEOUT: 10000
     SMITHERY: "true"
 
 # Environment variables required by the server
