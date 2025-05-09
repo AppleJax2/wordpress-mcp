@@ -36,8 +36,19 @@ SLOWMO=0
 // Run the Smithery publish command
 console.log(`Publishing ${PACKAGE_NAME} to Smithery...`);
 
-const publish = spawn('npx', ['@smithery/cli@latest', 'publish', '--include', FILES_TO_INCLUDE.join(',')], {
-  stdio: 'inherit'
+const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const includeArgs = FILES_TO_INCLUDE.flatMap(file => ['--include', file]);
+
+// Adjusting the arguments for npx.cmd on Windows
+const smitheryArgs = ['@smithery/cli@latest', 'publish', '--client', 'cursor', ...includeArgs];
+
+const publish = spawn(npxCommand, smitheryArgs, {
+  stdio: 'inherit',
+  shell: process.platform === 'win32' // Using shell option for Windows might help
+});
+
+publish.on('error', (error) => {
+  console.error(`Failed to start subprocess: ${error.message}`);
 });
 
 publish.on('close', (code) => {
