@@ -7,8 +7,10 @@ protocol: stdio
 
 # Command to start the server
 startCommand:
-  command: node
-  args: [mcp-wrapper.js]
+  type: stdio
+  commandFunction: 
+    command: node
+    args: [mcp-wrapper.js]
 
 # Environment variables required by the server
 configSchema:
