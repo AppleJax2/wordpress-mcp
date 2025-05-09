@@ -47,6 +47,7 @@ COPY --from=dependencies /app/node_modules ./node_modules
 COPY src/ ./src/
 COPY mcp-wrapper.js ./
 COPY smithery.yaml ./
+COPY smithery.json ./
 COPY .env.example ./
 
 # Set environment variables

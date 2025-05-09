@@ -1,5 +1,5 @@
 {
-  "name": "ididi/wordpress-mcp",
+  "name": "wordpress-mcp",
   "version": "1.0.0",
   "description": "MCP server for WordPress automation and management using browser automation and API integration",
   "main": "src/index.js",
