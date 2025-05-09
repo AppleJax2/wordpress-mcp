@@ -5,14 +5,58 @@
   "main": "mcp-wrapper.js",
   "startCommand": {
     "type": "stdio",
-    "commandFunction": "node mcp-wrapper.js",
-    "env": {
-      "PORT": "3001",
-      "MAX_API_CONNECTIONS": "3",
-      "MAX_BROWSER_CONNECTIONS": "1",
-      "CONNECTION_TIMEOUT": "10000",
-      "SMITHERY": "true"
-    }
+    "configSchema": {
+      "type": "object",
+      "properties": {
+        "WP_SITE_URL": {
+          "type": "string",
+          "description": "URL of the WordPress site (e.g., https://example.com)",
+          "default": "https://visitingvet.com"
+        },
+        "WP_USERNAME": {
+          "type": "string",
+          "description": "WordPress admin username"
+        },
+        "WP_APP_PASSWORD": {
+          "type": "string",
+          "description": "WordPress application password",
+          "format": "password"
+        },
+        "PORT": {
+          "type": "number",
+          "description": "Port for the local server",
+          "default": 3001
+        },
+        "NODE_ENV": {
+          "type": "string",
+          "description": "Environment (development or production)",
+          "enum": ["development", "production"],
+          "default": "production"
+        },
+        "HEADLESS": {
+          "type": "boolean",
+          "description": "Run browser in headless mode",
+          "default": true
+        },
+        "SLOWMO": {
+          "type": "number",
+          "description": "Slow motion delay for browser automation (ms)",
+          "default": 0
+        },
+        "MAX_API_CONNECTIONS": {
+          "type": "number",
+          "description": "Maximum number of API connections",
+          "default": 3
+        },
+        "MAX_BROWSER_CONNECTIONS": {
+          "type": "number",
+          "description": "Maximum number of browser connections",
+          "default": 1
+        }
+      },
+      "required": ["WP_SITE_URL", "WP_USERNAME", "WP_APP_PASSWORD"]
+    },
+    "commandFunction": "(config) => ({\n  command: \"node\",\n  args: [\"mcp-wrapper.js\"],\n  env: {\n    PORT: \"3001\",\n    MAX_API_CONNECTIONS: \"3\",\n    MAX_BROWSER_CONNECTIONS: \"1\",\n    CONNECTION_TIMEOUT: \"10000\",\n    SMITHERY: \"true\",\n    WP_SITE_URL: config.WP_SITE_URL,\n    WP_USERNAME: config.WP_USERNAME,\n    WP_APP_PASSWORD: config.WP_APP_PASSWORD,\n    NODE_ENV: config.NODE_ENV || \"production\",\n    HEADLESS: config.HEADLESS ? \"true\" : \"false\",\n    SLOWMO: String(config.SLOWMO || 0)\n  }\n})"
   },
   "author": "",
   "license": "MIT",
