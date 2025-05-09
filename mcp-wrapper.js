@@ -46,8 +46,15 @@ const startupNotification = {
   jsonrpc: "2.0",
   id: "1",
   result: {
-    type: "tools",
-    tools: [] // Initial empty tools array, will be replaced by subsequent notification
+    protocolVersion: "2023-11-15",
+    serverInfo: {
+      name: "WordPress MCP Server",
+      version: "1.0.0",
+      description: "MCP server for WordPress automation and management"
+    },
+    capabilities: {
+      tools: {}
+    }
   }
 };
 
@@ -158,8 +165,14 @@ rl.on('line', async (line) => {
         jsonrpc: "2.0",
         id: request.id,
         result: {
+          protocolVersion: "2023-11-15",
+          serverInfo: {
+            name: "WordPress MCP Server",
+            version: "1.0.0",
+            description: "MCP server for WordPress automation and management"
+          },
           capabilities: {
-            tools: true
+            tools: {}
           }
         }
       };
@@ -180,7 +193,7 @@ rl.on('line', async (line) => {
           jsonrpc: "2.0",
           method: "tools/refresh",
           params: {
-            tools: tools
+            tools: tools || []
           }
         };
         
@@ -348,7 +361,7 @@ debug('Starting MCP wrapper...');
           jsonrpc: "2.0",
           method: "tools/refresh",
           params: {
-            tools: tools
+            tools: tools || []
           }
         };
         
