@@ -510,68 +510,81 @@ class PluginManagerTool extends BaseTool {
    */
   getSchema() {
     return {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: ['list', 'get', 'install', 'upload', 'activate', 'deactivate', 'delete', 'update', 'search'],
-          description: 'Action to perform on plugins'
-        },
-        data: {
-          type: 'object',
-          description: 'Data specific to the action',
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
           properties: {
-            // For list action
-            status: { 
-              type: 'string', 
-              enum: ['', 'active', 'inactive'],
-              description: 'Filter plugins by status'
+            action: {
+              type: "string",
+              enum: ["list", "get", "install", "upload", "activate", "deactivate", "delete", "update", "search"],
+              description: "Action to perform on WordPress plugins",
+              default: "list"
             },
-            searchTerm: { 
-              type: 'string',
-              description: 'Search term to filter plugins by name or description'
-            },
-            
-            // For get, activate, deactivate, delete, update actions
-            pluginSlug: { 
-              type: 'string',
-              description: 'Plugin slug identifier (e.g., akismet)'
-            },
-            
-            // For install action
-            activate: { 
-              type: 'boolean',
-              description: 'Whether to activate the plugin after installation'
-            },
-            
-            // For upload action
-            fileUrl: { 
-              type: 'string',
-              description: 'URL to plugin zip file'
-            },
-            filePath: { 
-              type: 'string',
-              description: 'Local path to plugin zip file'
-            },
-            fileBuffer: { 
-              type: 'string',
-              description: 'Base64 encoded plugin zip file contents'
-            },
-            
-            // For search action
-            category: { 
-              type: 'string',
-              enum: ['', 'featured', 'popular', 'recommended', 'favorites'],
-              description: 'Plugin category filter'
-            },
-            page: { 
-              type: 'integer',
-              description: 'Results page number'
+            data: {
+              type: "object",
+              description: "Data specific to the selected plugin action",
+              properties: {
+                // For list action
+                status: { 
+                  type: "string", 
+                  enum: ["", "active", "inactive"],
+                  description: "Filter plugins by activation status",
+                  default: ""
+                },
+                searchTerm: { 
+                  type: "string",
+                  description: "Search term to filter plugins by name or description in the local plugin list"
+                },
+                
+                // For get, activate, deactivate, delete, update actions
+                pluginSlug: { 
+                  type: "string",
+                  description: "Plugin slug identifier (e.g., 'akismet', 'contact-form-7', 'woocommerce')"
+                },
+                
+                // For install action
+                activate: { 
+                  type: "boolean",
+                  description: "Whether to activate the plugin immediately after installation",
+                  default: false
+                },
+                
+                // For upload action
+                fileUrl: { 
+                  type: "string",
+                  description: "URL to plugin zip file (e.g., 'https://downloads.wordpress.org/plugin/akismet.5.1.zip')"
+                },
+                filePath: { 
+                  type: "string",
+                  description: "Local path to plugin zip file on the server (e.g., '/path/to/plugin.zip')"
+                },
+                fileBuffer: { 
+                  type: "string",
+                  description: "Base64 encoded plugin zip file contents"
+                },
+                
+                // For search action
+                category: { 
+                  type: "string",
+                  enum: ["", "featured", "popular", "recommended", "favorites"],
+                  description: "Plugin category filter for WordPress.org repository searches",
+                  default: ""
+                },
+                page: { 
+                  type: "integer",
+                  description: "Results page number for paginated search results",
+                  default: 1,
+                  minimum: 1
+                }
+              }
             }
-          }
+          },
+          required: ["action"]
         }
-      },
-      required: ['action']
+      }
     };
   }
 }

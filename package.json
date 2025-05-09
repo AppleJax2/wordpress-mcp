@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "publish:smithery": "node publish-to-smithery.js",
+    "start:smithery": "npx @smithery/cli@latest run wordpress-mcp-server"
   },
   "keywords": [
     "wordpress",
@@ -19,16 +21,27 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@smithery/sdk": "^1.3.2",
     "axios": "^1.6.2",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "form-data": "^4.0.0",
+    "jsdom": "^26.1.0",
     "node-fetch": "^2.7.0",
     "puppeteer": "^21.5.2",
     "winston": "^3.11.0"
   },
   "devDependencies": {
+    "@smithery/cli": "^1.1.87",
     "nodemon": "^3.0.1"
+  },
+  "smithery": {
+    "package": "wordpress-mcp-server",
+    "command": "node",
+    "args": [
+      "mcp-wrapper.js"
+    ],
+    "description": "WordPress MCP Server for automation and management"
   }
 }

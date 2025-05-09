@@ -763,39 +763,48 @@ class FormAnalysisTool extends BaseTool {
    */
   getSchema() {
     return {
-      type: 'object',
-      required: ['pagesToAnalyze'],
-      properties: {
-        pagesToAnalyze: {
-          type: 'array',
-          items: {
-            type: 'string'
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
+          properties: {
+            pagesToAnalyze: {
+              type: "array",
+              items: {
+                type: "string"
+              },
+              default: ["/"],
+              description: "List of page URLs to analyze for forms (relative paths from site root, e.g., ['/contact', '/signup'])"
+            },
+            formSelectors: {
+              type: "array",
+              items: {
+                type: "string"
+              },
+              default: ["form", ".wpcf7-form", ".gform_wrapper form", ".wpforms-form"],
+              description: "CSS selectors to identify forms on the pages (supports Contact Form 7, Gravity Forms, WPForms, and generic forms)"
+            },
+            performSubmissionTests: {
+              type: "boolean",
+              default: false,
+              description: "Whether to attempt test submissions to check form validation (non-destructive, won't actually submit data)"
+            },
+            accessibilityCheck: {
+              type: "boolean",
+              default: true,
+              description: "Whether to perform accessibility checks on forms (labels, contrast, keyboard navigation, ARIA)"
+            },
+            maxFormsPerPage: {
+              type: "integer",
+              default: 5,
+              minimum: 1,
+              maximum: 20,
+              description: "Maximum number of forms to analyze per page to prevent performance issues"
+            }
           },
-          default: ['/'],
-          description: 'List of page URLs to analyze'
-        },
-        formSelectors: {
-          type: 'array',
-          items: {
-            type: 'string'
-          },
-          default: ['form', '.wpcf7-form', '.gform_wrapper form', '.wpforms-form'],
-          description: 'CSS selectors to identify forms'
-        },
-        performSubmissionTests: {
-          type: 'boolean',
-          default: false,
-          description: 'Whether to attempt test submissions'
-        },
-        accessibilityCheck: {
-          type: 'boolean',
-          default: true,
-          description: 'Whether to perform accessibility checks'
-        },
-        maxFormsPerPage: {
-          type: 'number',
-          default: 5,
-          description: 'Maximum number of forms to analyze per page'
+          required: ["pagesToAnalyze"]
         }
       }
     };

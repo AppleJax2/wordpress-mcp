@@ -136,6 +136,83 @@ class NavigationOptimizerTool extends BaseTool {
         throw new Error(`Unknown action: ${action}`);
     }
   }
+
+  /**
+   * Get JSON schema for MCP
+   */
+  getSchema() {
+    return {
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
+          properties: {
+            action: {
+              type: "string",
+              enum: ["fetch", "analyze", "optimize"],
+              description: "The navigation optimization action to perform",
+              default: "optimize"
+            },
+            menuId: {
+              type: "integer",
+              description: "WordPress menu ID to analyze or optimize (required for 'fetch' and 'optimize' actions)"
+            },
+            structure: {
+              type: "array",
+              description: "Navigation structure to analyze (required for 'analyze' action)",
+              items: {
+                type: "object",
+                properties: {
+                  id: {
+                    type: "integer",
+                    description: "Menu item ID"
+                  },
+                  title: {
+                    type: "string",
+                    description: "Display title of the menu item"
+                  },
+                  url: {
+                    type: "string",
+                    description: "URL of the menu item"
+                  },
+                  depth: {
+                    type: "integer",
+                    description: "Nesting depth of the menu item (0 = top level)",
+                    minimum: 0
+                  }
+                },
+                required: ["title", "url", "depth"]
+              }
+            },
+            options: {
+              type: "object",
+              description: "Configuration options for navigation analysis and optimization",
+              properties: {
+                maxDepth: {
+                  type: "integer",
+                  description: "Maximum recommended nesting depth for navigation items",
+                  default: 2,
+                  minimum: 1,
+                  maximum: 5
+                },
+                keyPages: {
+                  type: "array",
+                  description: "Important pages that should be present in the navigation",
+                  items: {
+                    type: "string"
+                  },
+                  default: ["home", "about", "blog", "contact"]
+                }
+              }
+            }
+          },
+          required: ["action"]
+        }
+      }
+    };
+  }
 }
 
 module.exports = NavigationOptimizerTool; 

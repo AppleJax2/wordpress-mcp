@@ -546,90 +546,120 @@ class WidgetManagerTool extends BaseTool {
    */
   getSchema() {
     return {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: [
-            'listAreas',
-            'getAreaDetails',
-            'createArea',
-            'updateArea',
-            'deleteArea',
-            'listWidgets',
-            'addWidget',
-            'updateWidget',
-            'removeWidget',
-            'reorderWidgets'
-          ],
-          description: 'Action to perform with the widget manager'
-        },
-        data: {
-          type: 'object',
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
           properties: {
-            // Properties for listAreas
-            // No specific properties needed
-            
-            // Properties for getAreaDetails
-            areaId: {
-              type: 'string',
-              description: 'ID of the widget area to get details for'
+            action: {
+              type: "string",
+              enum: [
+                "listAreas",
+                "getAreaDetails",
+                "createArea",
+                "updateArea",
+                "deleteArea",
+                "listWidgets",
+                "addWidget",
+                "updateWidget",
+                "removeWidget",
+                "reorderWidgets"
+              ],
+              description: "The widget management action to perform",
+              default: "listAreas"
             },
-            
-            // Properties for createArea
+            areaId: {
+              type: "string",
+              description: "ID of the widget area/sidebar (required for most actions except listAreas and listWidgets)"
+            },
             name: {
-              type: 'string',
-              description: 'Name of the widget area to create'
+              type: "string",
+              description: "Name of the widget area for create and update operations"
             },
             description: {
-              type: 'string',
-              description: 'Description of the widget area'
+              type: "string",
+              description: "Description of the widget area for create and update operations"
             },
-            
-            // Properties for updateArea
-            // Uses areaId, name, description from above
-            
-            // Properties for deleteArea
-            // Uses areaId from above
-            
-            // Properties for listWidgets
-            // Uses areaId from above
-            
-            // Properties for addWidget
             widgetType: {
-              type: 'string',
-              description: 'Type of widget to add (e.g., text, custom_html, recent-posts)'
+              type: "string",
+              description: "Type of widget to add (e.g., 'text', 'custom_html', 'recent-posts', 'calendar')"
+            },
+            widgetId: {
+              type: "string",
+              description: "ID of the specific widget to update or remove"
             },
             widgetSettings: {
-              type: 'object',
-              description: 'Settings for the widget'
+              type: "object",
+              description: "Settings for the widget when adding or updating (varies by widget type)",
+              additionalProperties: true
             },
-            
-            // Properties for updateWidget
-            widgetId: {
-              type: 'string',
-              description: 'ID of the widget to update'
-            },
-            // Uses widgetSettings from above
-            
-            // Properties for removeWidget
-            // Uses widgetId from above
-            
-            // Properties for reorderWidgets
             widgetIds: {
-              type: 'array',
+              type: "array",
               items: {
-                type: 'string'
+                type: "string"
               },
-              description: 'Array of widget IDs in their new order'
+              description: "Array of widget IDs in their new desired order for reorderWidgets action"
+            },
+            includeInactive: {
+              type: "boolean",
+              description: "Whether to include inactive widgets when listing",
+              default: false
+            },
+            includeEmpty: {
+              type: "boolean",
+              description: "Whether to include empty widget areas when listing",
+              default: true
+            },
+            executeClientSide: {
+              type: "boolean",
+              description: "Whether to use browser automation for operations (required for most widget actions)",
+              default: true
+            },
+            takeScreenshot: {
+              type: "boolean",
+              description: "Whether to take a screenshot after performing the operation",
+              default: false
+            },
+            common: {
+              type: "object",
+              description: "Common WordPress widgets and their required parameters",
+              properties: {
+                text: {
+                  type: "object",
+                  description: "Text widget settings",
+                  properties: {
+                    title: { type: "string", description: "Widget title" },
+                    text: { type: "string", description: "Widget text content" },
+                    filter: { type: "boolean", description: "Whether to automatically add paragraphs" }
+                  }
+                },
+                recent_posts: {
+                  type: "object",
+                  description: "Recent Posts widget settings",
+                  properties: {
+                    title: { type: "string", description: "Widget title" },
+                    number: { type: "integer", description: "Number of posts to show", default: 5 },
+                    show_date: { type: "boolean", description: "Display post date?", default: false }
+                  }
+                },
+                categories: {
+                  type: "object",
+                  description: "Categories widget settings",
+                  properties: {
+                    title: { type: "string", description: "Widget title" },
+                    count: { type: "boolean", description: "Show post counts", default: false },
+                    hierarchical: { type: "boolean", description: "Show hierarchy", default: false },
+                    dropdown: { type: "boolean", description: "Display as dropdown", default: false }
+                  }
+                }
+              }
             }
           },
-          required: [],
-          additionalProperties: true
+          required: ["action"]
         }
-      },
-      required: ['action'],
-      additionalProperties: false
+      }
     };
   }
 }

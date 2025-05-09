@@ -664,93 +664,103 @@ class AuthenticatedUserAnalyzerTool extends BaseTool {
    */
   getSchema() {
     return {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: [
-            'analyze_user_journey',
-            'analyze_signup_funnel',
-            'analyze_login_patterns',
-            'analyze_account_management',
-            'track_user_sessions',
-            'generate_user_report',
-            'analyze_user_segments',
-            'identify_friction_points'
-          ],
-          description: 'User journey analysis action to perform'
-        },
-        data: {
-          type: 'object',
-          description: 'Data for the analysis operation',
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
           properties: {
-            userId: {
-              type: 'number',
-              description: 'WordPress user ID for user-specific analysis'
+            action: {
+              type: "string",
+              enum: [
+                "analyze_user_journey",
+                "analyze_signup_funnel",
+                "analyze_login_patterns",
+                "analyze_account_management",
+                "track_user_sessions",
+                "generate_user_report",
+                "analyze_user_segments",
+                "identify_friction_points"
+              ],
+              description: "User journey analysis action to perform"
             },
-            period: {
-              type: 'object',
-              description: 'Time period for analysis',
+            data: {
+              type: "object",
+              description: "Data for the selected analysis operation",
               properties: {
-                start: {
-                  type: 'string',
-                  description: 'Start date (ISO format)'
+                userId: {
+                  type: "integer",
+                  description: "WordPress user ID for user-specific analysis (required for analyze_user_journey, track_user_sessions, generate_user_report)"
                 },
-                end: {
-                  type: 'string',
-                  description: 'End date (ISO format)'
+                period: {
+                  type: "object",
+                  description: "Time period for analysis (optional, defaults to all time)",
+                  properties: {
+                    start: {
+                      type: "string",
+                      format: "date-time",
+                      description: "Start date in ISO format (e.g., '2025-05-01T00:00:00Z')"
+                    },
+                    end: {
+                      type: "string",
+                      format: "date-time",
+                      description: "End date in ISO format (e.g., '2025-05-08T23:59:59Z')"
+                    }
+                  }
+                },
+                filters: {
+                  type: "object",
+                  description: "Filters to apply to the analysis",
+                  properties: {
+                    roles: {
+                      type: "array",
+                      items: {
+                        type: "string"
+                      },
+                      description: "Filter by specific user roles (e.g., ['subscriber', 'author'])"
+                    },
+                    registrationSource: {
+                      type: "string",
+                      description: "Filter by registration source (e.g., 'form', 'social', 'api')"
+                    },
+                    userActivity: {
+                      type: "string",
+                      enum: ["active", "inactive", "new", "returning"],
+                      description: "Filter by user activity level"
+                    }
+                  }
+                },
+                segmentation: {
+                  type: "object",
+                  description: "Segmentation parameters for user segment analysis",
+                  properties: {
+                    by: {
+                      type: "string",
+                      enum: ["role", "registration_date", "activity", "location"],
+                      description: "The basis for segmenting users"
+                    },
+                    compareMetrics: {
+                      type: "array",
+                      items: {
+                        type: "string"
+                      },
+                      description: "Metrics to compare between segments (e.g., ['login_frequency', 'content_creation'])"
+                    }
+                  }
+                },
+                journeyStage: {
+                  type: "string",
+                  enum: ["all", "signup", "login", "account_management", "content_creation", "interactions"],
+                  description: "Journey stage to analyze for friction points",
+                  default: "all"
                 }
               }
-            },
-            filters: {
-              type: 'object',
-              description: 'Filters to apply to analysis',
-              properties: {
-                roles: {
-                  type: 'array',
-                  items: {
-                    type: 'string'
-                  },
-                  description: 'Filter by user roles'
-                },
-                registrationSource: {
-                  type: 'string',
-                  description: 'Filter by registration source'
-                },
-                userActivity: {
-                  type: 'string',
-                  enum: ['active', 'inactive', 'new', 'returning'],
-                  description: 'Filter by user activity level'
-                }
-              }
-            },
-            segmentation: {
-              type: 'object',
-              description: 'Segmentation parameters',
-              properties: {
-                by: {
-                  type: 'string',
-                  enum: ['role', 'registration_date', 'activity', 'location'],
-                  description: 'Segmentation basis'
-                },
-                compareMetrics: {
-                  type: 'array',
-                  items: {
-                    type: 'string'
-                  },
-                  description: 'Metrics to compare between segments'
-                }
-              }
-            },
-            journeyStage: {
-              type: 'string',
-              enum: ['all', 'signup', 'login', 'account_management', 'content_creation', 'interactions'],
-              description: 'Journey stage to analyze for friction points'
             }
-          }
+          },
+          required: ["action"]
         }
-      },
-      required: ['action']
+      }
     };
   }
 }

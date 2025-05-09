@@ -794,71 +794,82 @@ class ThemeManagerTool extends BaseTool {
    */
   getSchema() {
     return {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: ['list', 'get', 'install', 'upload', 'activate', 'delete', 'update', 'search'],
-          description: 'The theme management action to perform'
-        },
-        data: {
-          type: 'object',
-          description: 'Data specific to the action',
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
           properties: {
-            // Common properties
-            themeSlug: { 
-              type: 'string',
-              description: 'The theme slug identifier'
+            action: {
+              type: "string",
+              enum: ["listThemes", "getThemeDetails", "installTheme", "uploadTheme", "activateTheme", "deleteTheme", "updateTheme", "searchThemes"],
+              description: "The theme management action to perform",
+              default: "listThemes"
             },
-            
-            // For list themes
-            status: {
-              type: 'string',
-              enum: ['', 'active', 'inactive'],
-              description: 'Filter themes by status'
-            },
-            
-            // For install/activate theme
-            activate: {
-              type: 'boolean',
-              description: 'Whether to activate the theme after installation'
-            },
-            
-            // For upload theme
-            fileUrl: {
-              type: 'string',
-              description: 'URL to a theme zip file'
-            },
-            filePath: {
-              type: 'string',
-              description: 'Local file path to a theme zip file'
-            },
-            fileBuffer: {
-              type: 'string',
-              description: 'Base64-encoded theme zip file content'
-            },
-            
-            // For search themes
-            searchTerm: {
-              type: 'string',
-              description: 'Search term for finding themes'
-            },
-            subject: {
-              type: 'string',
-              description: 'Theme subject filter (e.g., Blog, E-Commerce)'
-            },
-            feature: {
-              type: 'string',
-              description: 'Theme feature filter (e.g., Accessibility Ready, Custom Colors)'
-            },
-            page: {
-              type: 'number',
-              description: 'Page number for search results'
+            data: {
+              type: "object",
+              description: "Data specific to the selected action",
+              properties: {
+                // Common properties
+                themeSlug: { 
+                  type: "string",
+                  description: "The theme slug/name identifier (required for getThemeDetails, installTheme, activateTheme, deleteTheme, updateTheme)"
+                },
+                
+                // For listThemes
+                status: {
+                  type: "string",
+                  enum: ["", "active", "inactive"],
+                  description: "Filter themes by status when listing",
+                  default: ""
+                },
+                
+                // For installTheme/uploadTheme
+                activate: {
+                  type: "boolean",
+                  description: "Whether to activate the theme after installation",
+                  default: false
+                },
+                
+                // For uploadTheme
+                fileUrl: {
+                  type: "string",
+                  description: "URL to download a theme zip file"
+                },
+                filePath: {
+                  type: "string",
+                  description: "Local file path to a theme zip file"
+                },
+                fileBuffer: {
+                  type: "string",
+                  description: "Base64-encoded theme zip file content"
+                },
+                
+                // For searchThemes
+                searchTerm: {
+                  type: "string",
+                  description: "Search term for finding themes in the WordPress.org repository"
+                },
+                subject: {
+                  type: "string",
+                  description: "Theme subject filter (e.g., Blog, E-Commerce, Portfolio)"
+                },
+                feature: {
+                  type: "string",
+                  description: "Theme feature filter (e.g., Accessibility Ready, Custom Colors, Editor Style)"
+                },
+                page: {
+                  type: "integer",
+                  description: "Page number for search results pagination",
+                  default: 1
+                }
+              }
             }
-          }
+          },
+          required: ["action"]
         }
-      },
-      required: ['action']
+      }
     };
   }
 }

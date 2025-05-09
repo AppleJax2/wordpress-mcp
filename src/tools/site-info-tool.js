@@ -246,27 +246,40 @@ class SiteInfoTool extends BaseTool {
    */
   getSchema() {
     return {
-      type: 'object',
-      properties: {
-        includeThemes: {
-          type: 'boolean',
-          description: 'Whether to include theme information'
-        },
-        includePlugins: {
-          type: 'boolean',
-          description: 'Whether to include plugin information'
-        },
-        includeUsers: {
-          type: 'boolean',
-          description: 'Whether to include user role statistics (anonymized)'
-        },
-        includeStats: {
-          type: 'boolean',
-          description: 'Whether to include content statistics'
-        },
-        includeSettings: {
-          type: 'boolean',
-          description: 'Whether to include site settings'
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
+          properties: {
+            includeThemes: {
+              type: "boolean",
+              description: "Whether to include detailed theme information (active theme, installed themes, count)",
+              default: true
+            },
+            includePlugins: {
+              type: "boolean",
+              description: "Whether to include detailed plugin information (active plugins, inactive plugins, count)",
+              default: true
+            },
+            includeUsers: {
+              type: "boolean",
+              description: "Whether to include user role statistics (anonymized for privacy and security)",
+              default: true
+            },
+            includeStats: {
+              type: "boolean",
+              description: "Whether to include content statistics (posts, pages, products if WooCommerce is active, listings if GeoDirectory is active)",
+              default: true
+            },
+            includeSettings: {
+              type: "boolean",
+              description: "Whether to include WordPress site settings (general settings from the admin panel)",
+              default: true
+            }
+          },
+          required: []
         }
       }
     };

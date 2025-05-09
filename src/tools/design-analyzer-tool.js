@@ -633,58 +633,73 @@ class DesignAnalyzerTool extends BaseTool {
    */
   getSchema() {
     return {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: ['analyzeColors', 'analyzeTypography', 'analyzeLayout', 'analyzeAccessibility', 'analyzeOverall'],
-          description: 'The type of design analysis to perform'
-        },
-        data: {
-          type: 'object',
-          description: 'Data specific to the analysis type',
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
           properties: {
-            url: {
-              type: 'string',
-              description: 'URL of the website to analyze'
+            action: {
+              type: "string",
+              enum: ["analyzeColors", "analyzeTypography", "analyzeLayout", "analyzeAccessibility", "analyzeOverall"],
+              description: "The type of design analysis to perform",
+              default: "analyzeOverall"
             },
-            // Color analysis options
-            checkContrast: {
-              type: 'boolean',
-              description: 'Whether to check color contrast for accessibility'
-            },
-            identifyPalette: {
-              type: 'boolean',
-              description: 'Whether to identify color palette'
-            },
-            // Typography analysis options
-            checkHierarchy: {
-              type: 'boolean',
-              description: 'Whether to check typography hierarchy'
-            },
-            checkReadability: {
-              type: 'boolean',
-              description: 'Whether to check text readability'
-            },
-            // Layout analysis options
-            checkResponsiveness: {
-              type: 'boolean',
-              description: 'Whether to check responsive layout'
-            },
-            checkAlignment: {
-              type: 'boolean',
-              description: 'Whether to check element alignment'
-            },
-            // Accessibility analysis options
-            checkKeyboardNav: {
-              type: 'boolean',
-              description: 'Whether to check keyboard navigation'
+            data: {
+              type: "object",
+              description: "Parameters specific to the selected analysis type",
+              properties: {
+                url: {
+                  type: "string",
+                  description: "URL of the WordPress website or page to analyze (required for all actions)"
+                },
+                // Color analysis options
+                checkContrast: {
+                  type: "boolean",
+                  description: "Whether to check color contrast for WCAG accessibility compliance",
+                  default: true
+                },
+                identifyPalette: {
+                  type: "boolean",
+                  description: "Whether to identify and analyze the color palette used on the site",
+                  default: true
+                },
+                // Typography analysis options
+                checkHierarchy: {
+                  type: "boolean",
+                  description: "Whether to check typography hierarchy (headings, body text, etc.)",
+                  default: true
+                },
+                checkReadability: {
+                  type: "boolean",
+                  description: "Whether to check text readability (font sizes, line height, etc.)",
+                  default: true
+                },
+                // Layout analysis options
+                checkResponsiveness: {
+                  type: "boolean",
+                  description: "Whether to check responsive layout across desktop, tablet, and mobile viewports",
+                  default: true
+                },
+                checkAlignment: {
+                  type: "boolean",
+                  description: "Whether to check element alignment and spacing consistency",
+                  default: true
+                },
+                // Accessibility analysis options
+                checkKeyboardNav: {
+                  type: "boolean",
+                  description: "Whether to check keyboard navigation accessibility",
+                  default: true
+                }
+              },
+              required: ["url"]
             }
           },
-          required: ['url']
+          required: ["action", "data"]
         }
-      },
-      required: ['action', 'data']
+      }
     };
   }
 }

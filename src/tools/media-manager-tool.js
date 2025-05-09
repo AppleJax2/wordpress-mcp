@@ -518,52 +518,143 @@ class MediaManagerTool extends BaseTool {
    */
   getSchema() {
     return {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: ['list', 'upload', 'get', 'update', 'delete', 'organize', 'screenshot'],
-          description: 'Action to perform on media'
-        },
-        data: {
-          type: 'object',
-          description: 'Data specific to the action',
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
           properties: {
-            // For list action
-            search: { type: 'string' },
-            mediaType: { type: 'string', enum: ['image', 'video', 'audio', 'application'] },
-            page: { type: 'integer' },
-            perPage: { type: 'integer' },
-            orderBy: { type: 'string', enum: ['date', 'title', 'id'] },
-            order: { type: 'string', enum: ['asc', 'desc'] },
-            
-            // For upload action
-            fileUrl: { type: 'string' },
-            filePath: { type: 'string' },
-            fileBuffer: { type: 'string' }, // Base64 encoded
-            filename: { type: 'string' },
-            contentType: { type: 'string' },
-            title: { type: 'string' },
-            alt: { type: 'string' },
-            caption: { type: 'string' },
-            description: { type: 'string' },
-            
-            // For get, update, delete actions
-            mediaId: { type: 'integer' },
-            force: { type: 'boolean' },
-            
-            // For organize action
-            mediaIds: { type: 'array', items: { type: 'integer' } },
-            folder: { type: 'string' },
-            createFolder: { type: 'boolean' },
-            
-            // For screenshot action
-            view: { type: 'string', enum: ['grid', 'list'] },
-            filter: { type: 'string', enum: ['', 'all', 'images', 'audio', 'video', 'documents'] }
-          }
+            action: {
+              type: "string",
+              enum: ["list", "upload", "get", "update", "delete", "organize", "screenshot"],
+              description: "Action to perform on WordPress media library",
+              default: "list"
+            },
+            data: {
+              type: "object",
+              description: "Data specific to the selected action",
+              properties: {
+                // For list action
+                search: { 
+                  type: "string",
+                  description: "Search term to filter media items by filename or title"
+                },
+                mediaType: { 
+                  type: "string", 
+                  enum: ["image", "video", "audio", "application"],
+                  description: "Filter by media type (image, video, audio, or application/document)"
+                },
+                page: { 
+                  type: "integer",
+                  description: "Page number for pagination",
+                  default: 1,
+                  minimum: 1
+                },
+                perPage: { 
+                  type: "integer",
+                  description: "Number of items per page",
+                  default: 20,
+                  minimum: 1,
+                  maximum: 100
+                },
+                orderBy: { 
+                  type: "string", 
+                  enum: ["date", "title", "id"],
+                  description: "Property to order results by",
+                  default: "date"
+                },
+                order: { 
+                  type: "string", 
+                  enum: ["asc", "desc"],
+                  description: "Sort order (ascending or descending)",
+                  default: "desc"
+                },
+                
+                // For upload action
+                fileUrl: { 
+                  type: "string",
+                  description: "URL of media file to download and upload to WordPress"
+                },
+                filePath: { 
+                  type: "string",
+                  description: "Local file path of media to upload (server-side)"
+                },
+                fileBuffer: { 
+                  type: "string",
+                  description: "Base64-encoded file content to upload"
+                },
+                filename: { 
+                  type: "string",
+                  description: "Filename to use for the uploaded file (optional)"
+                },
+                contentType: { 
+                  type: "string",
+                  description: "MIME type of the file (e.g., 'image/jpeg', 'application/pdf')"
+                },
+                title: { 
+                  type: "string",
+                  description: "Title for the media item"
+                },
+                alt: { 
+                  type: "string",
+                  description: "Alternative text for images (important for accessibility)"
+                },
+                caption: { 
+                  type: "string",
+                  description: "Caption text to display below the media"
+                },
+                description: { 
+                  type: "string",
+                  description: "Detailed description of the media item"
+                },
+                
+                // For get, update, delete actions
+                mediaId: { 
+                  type: "integer",
+                  description: "ID of the media item to get, update, or delete"
+                },
+                force: { 
+                  type: "boolean",
+                  description: "Whether to permanently delete (true) or move to trash (false)",
+                  default: false
+                },
+                
+                // For organize action
+                mediaIds: { 
+                  type: "array", 
+                  items: { type: "integer" },
+                  description: "Array of media IDs to organize into folders"
+                },
+                folder: { 
+                  type: "string",
+                  description: "Name of the folder to move media items to (requires FileBird or similar plugin)"
+                },
+                createFolder: { 
+                  type: "boolean",
+                  description: "Whether to create the folder if it doesn't exist",
+                  default: false
+                },
+                
+                // For screenshot action
+                view: { 
+                  type: "string", 
+                  enum: ["grid", "list"],
+                  description: "Media library view type to capture",
+                  default: "grid"
+                },
+                filter: { 
+                  type: "string", 
+                  enum: ["", "all", "images", "audio", "video", "documents"],
+                  description: "Filter to apply to the media library view",
+                  default: ""
+                }
+              }
+            }
+          },
+          required: ["action"]
         }
-      },
-      required: ['action']
+      }
     };
   }
 }

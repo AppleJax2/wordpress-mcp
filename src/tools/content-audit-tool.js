@@ -869,65 +869,78 @@ class ContentAuditTool extends BaseTool {
    */
   getSchema() {
     return {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: ['analyze', 'summary', 'suggestions'],
-          description: 'Type of content audit to perform'
-        },
-        target: {
-          type: 'object',
-          description: 'The content to analyze',
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
           properties: {
-            contentId: { 
-              type: 'integer', 
-              description: 'ID of WordPress content' 
+            action: {
+              type: "string",
+              enum: ["analyze", "summary", "suggestions"],
+              description: "Type of content audit to perform (analyze=full analysis, summary=brief overview, suggestions=improvement recommendations)",
+              default: "analyze"
             },
-            contentUrl: { 
-              type: 'string', 
-              description: 'URL of content to analyze' 
+            target: {
+              type: "object",
+              description: "The content to analyze (must provide one of: contentId, contentUrl, or contentText)",
+              properties: {
+                contentId: { 
+                  type: "integer", 
+                  description: "ID of WordPress content to analyze" 
+                },
+                contentUrl: { 
+                  type: "string", 
+                  description: "URL of web content to analyze" 
+                },
+                contentText: { 
+                  type: "string", 
+                  description: "Direct text/HTML content to analyze" 
+                }
+              },
+              oneOf: [
+                { required: ["contentId"] },
+                { required: ["contentUrl"] },
+                { required: ["contentText"] }
+              ]
             },
-            contentText: { 
-              type: 'string', 
-              description: 'Direct text content to analyze' 
+            options: {
+              type: "object",
+              description: "Analysis options and settings",
+              properties: {
+                includeQuality: { 
+                  type: "boolean", 
+                  default: true, 
+                  description: "Include quality analysis (grammar, structure, content length, etc.)" 
+                },
+                includeReadability: { 
+                  type: "boolean", 
+                  default: true,
+                  description: "Include readability analysis (reading level, sentence complexity, etc.)"
+                },
+                includeSEO: { 
+                  type: "boolean", 
+                  default: true,
+                  description: "Include SEO analysis (meta tags, headings, keywords, etc.)"
+                },
+                includeEngagement: { 
+                  type: "boolean", 
+                  default: true,
+                  description: "Include engagement metrics analysis (requires analytics integration)"
+                },
+                detailLevel: { 
+                  type: "string", 
+                  enum: ["basic", "detailed", "comprehensive"],
+                  default: "detailed",
+                  description: "Level of detail for the analysis (basic=quick overview, detailed=standard analysis, comprehensive=in-depth analysis)"
+                }
+              }
             }
-          }
-        },
-        options: {
-          type: 'object',
-          description: 'Analysis options',
-          properties: {
-            includeQuality: { 
-              type: 'boolean', 
-              default: true, 
-              description: 'Include quality analysis in results' 
-            },
-            includeReadability: { 
-              type: 'boolean', 
-              default: true,
-              description: 'Include readability analysis in results'
-            },
-            includeSEO: { 
-              type: 'boolean', 
-              default: true,
-              description: 'Include SEO analysis in results'
-            },
-            includeEngagement: { 
-              type: 'boolean', 
-              default: true,
-              description: 'Include engagement metrics analysis in results'
-            },
-            detailLevel: { 
-              type: 'string', 
-              enum: ['basic', 'detailed', 'comprehensive'],
-              default: 'detailed',
-              description: 'Level of detail for the analysis'
-            }
-          }
+          },
+          required: ["action", "target"]
         }
-      },
-      required: ['action', 'target']
+      }
     };
   }
 }

@@ -1,0 +1,23 @@
+{
+  "name": "wordpress-mcp-server",
+  "version": "1.0.0",
+  "description": "WordPress MCP Server for automation and management using browser automation and API integration",
+  "main": "mcp-wrapper.js",
+  "command": "node",
+  "args": ["mcp-wrapper.js"],
+  "environment": {
+    "PORT": "3001"
+  },
+  "author": "",
+  "license": "MIT",
+  "toolCategories": [
+    {
+      "name": "WordPress Management",
+      "description": "Tools for managing and automating WordPress sites",
+      "tools": ["*"]
+    }
+  ],
+  "mcp": {
+    "protocol": "stdio"
+  }
+} 

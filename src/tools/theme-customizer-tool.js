@@ -448,30 +448,56 @@ class ThemeCustomizerTool extends BaseTool {
    */
   getSchema() {
     return {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: ['getThemes', 'activateTheme', 'customizeDivi', 'customizeGeneral'],
-          description: 'The theme customization action to perform'
-        },
-        data: {
-          type: 'object',
-          description: 'Data specific to the action',
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
           properties: {
-            // For activateTheme
-            themeSlug: { type: 'string' },
-            
-            // For customizeDivi and customizeGeneral
-            section: { type: 'string' },
-            settings: { 
-              type: 'object',
-              additionalProperties: true
+            action: {
+              type: "string",
+              enum: ["getThemes", "activateTheme", "customizeDivi", "customizeGeneral"],
+              description: "The theme customization action to perform"
+            },
+            data: {
+              type: "object",
+              description: "Data specific to the selected action",
+              properties: {
+                // For activateTheme
+                themeSlug: { 
+                  type: "string",
+                  description: "The slug/name identifier of the theme to activate" 
+                },
+                
+                // For customizeDivi and customizeGeneral
+                section: { 
+                  type: "string", 
+                  description: "The settings section ID to customize (e.g., 'general', 'colors', 'header' for Divi; or 'title_tagline', 'colors', 'header_image' for WordPress customizer)" 
+                },
+                settings: { 
+                  type: "object",
+                  description: "Key-value pairs of setting names and their values. For Divi, these are Divi Theme Options settings. For WordPress customizer, these are theme mods.",
+                  additionalProperties: {
+                    oneOf: [
+                      { type: "string" },
+                      { type: "number" },
+                      { type: "boolean" },
+                      { type: "array" }
+                    ]
+                  },
+                  example: {
+                    "header_text_color": "#ffffff",
+                    "show_site_title": true,
+                    "header_height": 90
+                  }
+                }
+              }
             }
-          }
+          },
+          required: ["action"]
         }
-      },
-      required: ['action']
+      }
     };
   }
 }

@@ -671,24 +671,257 @@ class WooCommerceManagerTool extends BaseTool {
    */
   getSchema() {
     return {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: ['list', 'get', 'create', 'update', 'delete'],
-          description: 'Action to perform on the WooCommerce resource'
-        },
-        resource: {
-          type: 'string',
-          enum: ['product', 'order', 'customer', 'setting'],
-          description: 'Type of WooCommerce resource to manage'
-        },
-        data: {
-          type: 'object',
-          description: 'Data specific to the action and resource type'
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
+          properties: {
+            action: {
+              type: "string",
+              enum: ["list", "get", "create", "update", "delete"],
+              description: "Action to perform on the WooCommerce resource",
+              default: "list"
+            },
+            resource: {
+              type: "string",
+              enum: ["product", "order", "customer", "setting"],
+              description: "Type of WooCommerce resource to manage",
+              default: "product"
+            },
+            id: {
+              type: "integer",
+              description: "ID of the specific resource for get, update, and delete operations"
+            },
+            // Common filters and pagination parameters
+            search: {
+              type: "string",
+              description: "Search term for filtering results"
+            },
+            page: {
+              type: "integer",
+              description: "Page number for paginated results",
+              default: 1,
+              minimum: 1
+            },
+            perPage: {
+              type: "integer",
+              description: "Number of items per page",
+              default: 20,
+              minimum: 1,
+              maximum: 100
+            },
+            order: {
+              type: "string",
+              enum: ["asc", "desc"],
+              description: "Sort order (ascending or descending)",
+              default: "desc"
+            },
+            orderBy: {
+              type: "string",
+              description: "Field to order results by (varies by resource)",
+              default: "date"
+            },
+            force: {
+              type: "boolean",
+              description: "Whether to permanently delete the resource (true) or move to trash (false)",
+              default: false
+            },
+            // Product specific parameters
+            name: {
+              type: "string",
+              description: "Product name (required for create operation)"
+            },
+            type: {
+              type: "string",
+              enum: ["simple", "grouped", "external", "variable"],
+              description: "Product type",
+              default: "simple"
+            },
+            status: {
+              type: "string",
+              enum: ["draft", "pending", "private", "publish"],
+              description: "Product status",
+              default: "draft"
+            },
+            featured: {
+              type: "boolean",
+              description: "Whether the product is featured",
+              default: false
+            },
+            catalog_visibility: {
+              type: "string",
+              enum: ["visible", "catalog", "search", "hidden"],
+              description: "Product visibility in the catalog",
+              default: "visible"
+            },
+            description: {
+              type: "string",
+              description: "Full product description (HTML allowed)"
+            },
+            short_description: {
+              type: "string",
+              description: "Short product description (HTML allowed)"
+            },
+            sku: {
+              type: "string",
+              description: "Product stock keeping unit"
+            },
+            regular_price: {
+              type: "string",
+              description: "Product regular price (string format, e.g. '29.99')"
+            },
+            sale_price: {
+              type: "string",
+              description: "Product sale price (string format, e.g. '19.99')"
+            },
+            virtual: {
+              type: "boolean",
+              description: "Whether the product is virtual (doesn't require shipping)",
+              default: false
+            },
+            downloadable: {
+              type: "boolean",
+              description: "Whether the product is downloadable",
+              default: false
+            },
+            categories: {
+              type: "array",
+              description: "Product categories (array of objects with id or name)",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "integer" },
+                  name: { type: "string" }
+                }
+              }
+            },
+            tags: {
+              type: "array",
+              description: "Product tags (array of objects with id or name)",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "integer" },
+                  name: { type: "string" }
+                }
+              }
+            },
+            images: {
+              type: "array",
+              description: "Product images (array of objects with src or id)",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "integer" },
+                  src: { type: "string" },
+                  alt: { type: "string" }
+                }
+              }
+            },
+            stock_status: {
+              type: "string",
+              enum: ["instock", "outofstock", "onbackorder"],
+              description: "Product stock status",
+              default: "instock"
+            },
+            manage_stock: {
+              type: "boolean",
+              description: "Whether to enable stock management",
+              default: false
+            },
+            stock_quantity: {
+              type: "integer",
+              description: "Stock quantity (if manage_stock is true)"
+            },
+            // Order specific filters
+            customer: {
+              type: "integer",
+              description: "Filter orders by customer ID"
+            },
+            product: {
+              type: "integer",
+              description: "Filter orders by product ID"
+            },
+            after: {
+              type: "string",
+              description: "Filter orders placed after date (ISO8601 format, e.g. '2023-01-01T00:00:00Z')"
+            },
+            before: {
+              type: "string",
+              description: "Filter orders placed before date (ISO8601 format, e.g. '2023-12-31T23:59:59Z')"
+            },
+            // Customer specific parameters
+            email: {
+              type: "string",
+              description: "Customer email (required for create operation)"
+            },
+            first_name: {
+              type: "string",
+              description: "Customer first name"
+            },
+            last_name: {
+              type: "string",
+              description: "Customer last name"
+            },
+            username: {
+              type: "string",
+              description: "Customer username (defaults to email if not provided)"
+            },
+            password: {
+              type: "string",
+              description: "Customer password (for create operation)"
+            },
+            billing: {
+              type: "object",
+              description: "Customer billing details",
+              properties: {
+                first_name: { type: "string" },
+                last_name: { type: "string" },
+                company: { type: "string" },
+                address_1: { type: "string" },
+                address_2: { type: "string" },
+                city: { type: "string" },
+                state: { type: "string" },
+                postcode: { type: "string" },
+                country: { type: "string" },
+                email: { type: "string" },
+                phone: { type: "string" }
+              }
+            },
+            shipping: {
+              type: "object",
+              description: "Customer shipping details",
+              properties: {
+                first_name: { type: "string" },
+                last_name: { type: "string" },
+                company: { type: "string" },
+                address_1: { type: "string" },
+                address_2: { type: "string" },
+                city: { type: "string" },
+                state: { type: "string" },
+                postcode: { type: "string" },
+                country: { type: "string" }
+              }
+            },
+            // Setting specific parameters
+            group: {
+              type: "string",
+              description: "WooCommerce setting group (e.g., 'general', 'products', 'tax', 'shipping')"
+            },
+            setting_id: {
+              type: "string",
+              description: "ID of the specific setting to update"
+            },
+            value: {
+              type: "string",
+              description: "New value for the setting"
+            }
+          },
+          required: ["action", "resource"]
         }
-      },
-      required: ['action', 'resource']
+      }
     };
   }
 }

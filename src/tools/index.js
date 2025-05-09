@@ -81,11 +81,35 @@ const wordpressTools = {
 };
 
 // Export tools metadata for MCP integration
-const wordpressToolsMetadata = Object.values(wordpressTools).map(tool => ({
-  name: tool.name,
-  description: tool.description,
-  schema: tool.getSchema()
-}));
+const wordpressToolsMetadata = Object.values(wordpressTools).map(tool => {
+  console.log(`Processing tool: ${tool.name}`);
+  if (typeof tool.getSchema !== 'function') {
+    console.error(`ERROR: Tool '${tool.name}' is missing the getSchema() method.`);
+    return null;
+  }
+  
+  // Get the schema from the tool
+  const schema = tool.getSchema();
+  
+  // Ensure the schema is in the correct format
+  if (!schema.type || !schema.function) {
+    console.error(`ERROR: Tool '${tool.name}' schema is not in the correct format.`);
+  return {
+      type: "function",
+      function: {
+    name: tool.name,
+    description: tool.description,
+        parameters: {
+          type: "object",
+          properties: {},
+          required: []
+        }
+      }
+    };
+  }
+  
+  return schema;
+}).filter(Boolean); // Remove any null entries
 
 module.exports = {
   wordpressTools,

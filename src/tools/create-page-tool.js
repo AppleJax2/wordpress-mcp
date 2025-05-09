@@ -147,42 +147,54 @@ class CreatePageTool extends BaseTool {
    */
   getSchema() {
     return {
-      type: 'object',
-      properties: {
-        title: {
-          type: 'string',
-          description: 'Title of the page'
-        },
-        content: {
-          type: 'string',
-          description: 'Content of the page'
-        },
-        useBrowser: {
-          type: 'boolean',
-          description: 'Whether to use browser automation (required for visual builders)'
-        },
-        status: {
-          type: 'string',
-          enum: ['publish', 'draft', 'pending', 'private'],
-          description: 'Status of the page'
-        },
-        template: {
-          type: 'string',
-          description: 'Page template to use'
-        },
-        useDivi: {
-          type: 'boolean',
-          description: 'Whether to use Divi builder for the page'
-        },
-        categories: {
-          type: 'array',
-          items: {
-            type: 'integer'
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
+          properties: {
+            title: {
+              type: "string",
+              description: "Title of the page (required)"
+            },
+            content: {
+              type: "string",
+              description: "HTML content of the page (required unless using Divi builder)"
+            },
+            useBrowser: {
+              type: "boolean",
+              description: "Whether to use browser automation for creation (required for visual builders like Divi)",
+              default: false
+            },
+            status: {
+              type: "string",
+              enum: ["publish", "draft", "pending", "private"],
+              description: "Publication status of the page",
+              default: "publish"
+            },
+            template: {
+              type: "string",
+              description: "Page template to use (if supported by the theme)",
+              default: ""
+            },
+            useDivi: {
+              type: "boolean",
+              description: "Whether to use the Divi builder for page creation",
+              default: false
+            },
+            categories: {
+              type: "array",
+              items: {
+                type: "integer"
+              },
+              description: "Array of category IDs to assign to the page",
+              default: []
+            }
           },
-          description: 'Categories to assign to the page'
+          required: ["title"]
         }
-      },
-      required: ['title']
+      }
     };
   }
 }

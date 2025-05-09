@@ -289,49 +289,116 @@ class GeoDirectoryTool extends BaseTool {
    */
   getSchema() {
     return {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: ['getListings', 'configureSetting', 'addListing'],
-          description: 'The GeoDirectory action to perform'
-        },
-        data: {
-          type: 'object',
-          description: 'Data specific to the action',
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
           properties: {
-            // For getListings
-            perPage: { type: 'integer' },
-            page: { type: 'integer' },
-            categories: { type: 'array', items: { type: 'string' } },
-            
-            // For configureSetting
-            settingSection: { type: 'string' },
-            settingKey: { type: 'string' },
-            settingValue: { type: ['string', 'boolean', 'number'] },
-            
-            // For addListing
-            title: { type: 'string' },
-            content: { type: 'string' },
-            category: { type: ['string', 'integer'] },
-            location: {
-              type: 'object',
-              properties: {
-                street: { type: 'string' },
-                city: { type: 'string' },
-                region: { type: 'string' },
-                country: { type: 'string' },
-                postalCode: { type: 'string' },
-                latitude: { type: 'number' },
-                longitude: { type: 'number' }
-              }
+            action: {
+              type: "string",
+              enum: ["getListings", "configureSetting", "addListing"],
+              description: "The GeoDirectory action to perform"
             },
-            images: { type: 'array', items: { type: 'string' } },
-            customFields: { type: 'object' }
-          }
+            data: {
+              type: "object",
+              description: "Data specific to the selected action",
+              properties: {
+                // For getListings
+                perPage: { 
+                  type: "integer", 
+                  description: "Number of listings to return per page",
+                  default: 10
+                },
+                page: { 
+                  type: "integer", 
+                  description: "Page number for pagination",
+                  default: 1
+                },
+                categories: { 
+                  type: "array", 
+                  items: { type: "string" },
+                  description: "Filter listings by these category names or IDs"
+                },
+                
+                // For configureSetting
+                settingSection: { 
+                  type: "string", 
+                  description: "The settings section ID in GeoDirectory (e.g., 'general', 'listings', 'maps')" 
+                },
+                settingKey: { 
+                  type: "string", 
+                  description: "The specific setting key to configure" 
+                },
+                settingValue: { 
+                  type: ["string", "boolean", "number"],
+                  description: "The new value to set for the specified setting" 
+                },
+                
+                // For addListing
+                title: { 
+                  type: "string", 
+                  description: "Title of the new GeoDirectory listing" 
+                },
+                content: { 
+                  type: "string", 
+                  description: "Main content/description of the listing" 
+                },
+                category: { 
+                  type: ["string", "integer"],
+                  description: "Category ID or name for the listing" 
+                },
+                location: {
+                  type: "object",
+                  description: "Geographic location details for the listing",
+                  properties: {
+                    street: { 
+                      type: "string", 
+                      description: "Street address" 
+                    },
+                    city: { 
+                      type: "string", 
+                      description: "City name" 
+                    },
+                    region: { 
+                      type: "string", 
+                      description: "Region, state or province" 
+                    },
+                    country: { 
+                      type: "string", 
+                      description: "Country name or code" 
+                    },
+                    postalCode: { 
+                      type: "string", 
+                      description: "Postal or ZIP code" 
+                    },
+                    latitude: { 
+                      type: "number", 
+                      description: "Geographic latitude coordinate" 
+                    },
+                    longitude: { 
+                      type: "number", 
+                      description: "Geographic longitude coordinate" 
+                    }
+                  },
+                  required: ["city", "country"]
+                },
+                images: { 
+                  type: "array", 
+                  items: { type: "string" },
+                  description: "Array of image URLs or paths to attach to the listing" 
+                },
+                customFields: { 
+                  type: "object", 
+                  description: "Key-value pairs of custom fields specific to your GeoDirectory setup" 
+                }
+              }
+            }
+          },
+          required: ["action"]
         }
-      },
-      required: ['action']
+      }
     };
   }
 }

@@ -860,56 +860,134 @@ class ContentManagerTool extends BaseTool {
    */
   getSchema() {
     return {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: ['list', 'create', 'get', 'update', 'delete', 'screenshot', 'buildWithDivi'],
-          description: 'Action to perform on content'
-        },
-        contentType: {
-          type: 'string',
-          enum: ['page', 'post', 'custom'],
-          description: 'Type of content to manage'
-        },
-        data: {
-          type: 'object',
-          description: 'Data specific to the action',
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
           properties: {
-            // Common properties
-            id: { type: 'integer', description: 'Content ID (for get, update, delete, screenshot, buildWithDivi)' },
-            
-            // List properties
-            search: { type: 'string', description: 'Search term (for list)' },
-            status: { type: 'string', description: 'Content status (for list)' },
-            page: { type: 'integer', description: 'Page number (for list)' },
-            perPage: { type: 'integer', description: 'Items per page (for list)' },
-            
-            // Create/update properties
-            title: { type: 'string', description: 'Content title' },
-            content: { type: 'string', description: 'Content body' },
-            excerpt: { type: 'string', description: 'Content excerpt' },
-            featuredMedia: { type: 'integer', description: 'Featured image ID' },
-            template: { type: 'string', description: 'Page template' },
-            parent: { type: 'integer', description: 'Parent page ID' },
-            order: { type: 'integer', description: 'Menu order' },
-            categories: { type: 'array', items: { type: 'integer' }, description: 'Category IDs (posts only)' },
-            tags: { type: 'array', items: { type: 'integer' }, description: 'Tag IDs (posts only)' },
-            meta: { type: 'object', description: 'Custom meta fields' },
-            
-            // Browser-specific options
-            useBrowser: { type: 'boolean', description: 'Whether to use browser automation' },
-            useDivi: { type: 'boolean', description: 'Whether to use Divi builder' },
-            
-            // Delete options
-            force: { type: 'boolean', description: 'Whether to force delete (bypass trash)' },
-            
-            // Screenshot options
-            type: { type: 'string', enum: ['admin', 'frontend'], description: 'Type of screenshot to take' }
-          }
+            action: {
+              type: "string",
+              enum: ["list", "create", "get", "update", "delete", "screenshot", "buildWithDivi"],
+              description: "Action to perform on WordPress content",
+              default: "list"
+            },
+            contentType: {
+              type: "string",
+              enum: ["page", "post", "custom"],
+              description: "Type of WordPress content to manage",
+              default: "page"
+            },
+            data: {
+              type: "object",
+              description: "Data specific to the selected action",
+              properties: {
+                // Common properties
+                id: { 
+                  type: "integer", 
+                  description: "Content ID (required for get, update, delete, screenshot, buildWithDivi actions)" 
+                },
+                
+                // List properties
+                search: { 
+                  type: "string", 
+                  description: "Search term to filter results" 
+                },
+                status: { 
+                  type: "string", 
+                  enum: ["publish", "draft", "pending", "private", "future", "trash", "any"],
+                  description: "Content status filter" 
+                },
+                page: { 
+                  type: "integer", 
+                  description: "Page number for pagination",
+                  default: 1 
+                },
+                perPage: { 
+                  type: "integer", 
+                  description: "Number of items per page",
+                  default: 20 
+                },
+                
+                // Create/update properties
+                title: { 
+                  type: "string", 
+                  description: "Content title (required for create action)" 
+                },
+                content: { 
+                  type: "string", 
+                  description: "Content body in HTML format" 
+                },
+                excerpt: { 
+                  type: "string", 
+                  description: "Short excerpt/summary of the content" 
+                },
+                featuredMedia: { 
+                  type: "integer", 
+                  description: "Featured image/media ID" 
+                },
+                template: { 
+                  type: "string", 
+                  description: "Page template filename (e.g., 'template-full-width.php')" 
+                },
+                parent: { 
+                  type: "integer", 
+                  description: "Parent page/post ID (for hierarchical content)",
+                  default: 0 
+                },
+                order: { 
+                  type: "integer", 
+                  description: "Menu order (for controlling display order)",
+                  default: 0 
+                },
+                categories: { 
+                  type: "array", 
+                  items: { type: "integer" }, 
+                  description: "Category IDs (for posts only)" 
+                },
+                tags: { 
+                  type: "array", 
+                  items: { type: "integer" }, 
+                  description: "Tag IDs (for posts only)" 
+                },
+                meta: { 
+                  type: "object", 
+                  description: "Custom meta fields as key-value pairs" 
+                },
+                
+                // Browser-specific options
+                useBrowser: { 
+                  type: "boolean", 
+                  description: "Whether to use browser automation instead of API",
+                  default: false 
+                },
+                useDivi: { 
+                  type: "boolean", 
+                  description: "Whether to use Divi builder for content creation/editing",
+                  default: false 
+                },
+                
+                // Delete options
+                force: { 
+                  type: "boolean", 
+                  description: "Whether to force delete (bypass trash)",
+                  default: false 
+                },
+                
+                // Screenshot options
+                type: { 
+                  type: "string", 
+                  enum: ["admin", "frontend"], 
+                  description: "Type of screenshot to take (admin=editor view, frontend=public view)",
+                  default: "admin" 
+                }
+              }
+            }
+          },
+          required: ["action", "contentType"]
         }
-      },
-      required: ['action', 'contentType']
+      }
     };
   }
 }

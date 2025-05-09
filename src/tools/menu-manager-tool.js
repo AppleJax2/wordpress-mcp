@@ -868,89 +868,113 @@ class MenuManagerTool extends BaseTool {
    */
   getSchema() {
     return {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: ['list', 'get', 'create', 'update', 'delete', 'addItem', 'removeItem', 'reorder', 'screenshot'],
-          description: 'Action to perform on menus'
-        },
-        data: {
-          type: 'object',
-          description: 'Data specific to the action',
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
           properties: {
-            // Common properties
-            menuId: { 
-              type: 'integer',
-              description: 'Menu ID' 
+            action: {
+              type: "string",
+              enum: ["list", "get", "create", "update", "delete", "addItem", "removeItem", "reorder", "screenshot"],
+              description: "Action to perform on WordPress navigation menus",
+              default: "list"
             },
-            
-            // For create/update actions
-            name: { 
-              type: 'string',
-              description: 'Menu name' 
-            },
-            locations: { 
-              type: 'array',
-              items: { type: 'string' },
-              description: 'Menu locations (theme locations where this menu should appear)' 
-            },
-            autoAddPages: { 
-              type: 'boolean',
-              description: 'Whether to automatically add new top-level pages to this menu' 
-            },
-            
-            // For addItem action
-            type: { 
-              type: 'string',
-              enum: ['custom', 'page', 'post', 'category', 'tag'],
-              description: 'Type of menu item to add' 
-            },
-            title: { 
-              type: 'string',
-              description: 'Menu item title' 
-            },
-            url: { 
-              type: 'string',
-              description: 'URL for custom links' 
-            },
-            objectId: { 
-              type: 'integer',
-              description: 'ID of the object (post, page, etc.) for non-custom links' 
-            },
-            parentId: { 
-              type: 'integer',
-              description: 'Parent menu item ID (0 for top-level)' 
-            },
-            position: { 
-              type: 'integer',
-              description: 'Position in the menu (-1 for end)' 
-            },
-            
-            // For removeItem action
-            itemId: { 
-              type: 'integer',
-              description: 'Menu item ID to remove' 
-            },
-            
-            // For reorder action
-            items: { 
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  id: { type: 'integer' },
-                  parentId: { type: 'integer' },
-                  position: { type: 'integer' }
+            data: {
+              type: "object",
+              description: "Data specific to the selected menu action",
+              properties: {
+                // Common properties
+                menuId: { 
+                  type: "integer",
+                  description: "WordPress menu ID (required for all actions except 'list' and 'create')"
                 },
-                required: ['id']
-              },
-              description: 'Array of items with new ordering information' 
+                
+                // For create/update actions
+                name: { 
+                  type: "string",
+                  description: "Name of the menu to create or update (e.g., 'Main Menu', 'Footer Navigation')"
+                },
+                locations: { 
+                  type: "array",
+                  items: { type: "string" },
+                  description: "Theme locations where this menu should appear (e.g., ['primary', 'footer', 'mobile'])"
+                },
+                autoAddPages: { 
+                  type: "boolean",
+                  description: "Whether to automatically add new top-level pages to this menu",
+                  default: false
+                },
+                
+                // For addItem action
+                type: { 
+                  type: "string",
+                  enum: ["custom", "page", "post", "category", "tag"],
+                  description: "Type of menu item to add",
+                  default: "custom" 
+                },
+                title: { 
+                  type: "string",
+                  description: "Display title for the menu item"
+                },
+                url: { 
+                  type: "string",
+                  description: "URL for custom links (required when type is 'custom')",
+                  default: "#"
+                },
+                objectId: { 
+                  type: "integer",
+                  description: "ID of the WordPress object (post, page, category, etc.) for non-custom links"
+                },
+                parentId: { 
+                  type: "integer",
+                  description: "Parent menu item ID (0 for top-level items, or ID of parent for sub-items)",
+                  default: 0
+                },
+                position: { 
+                  type: "integer",
+                  description: "Position in the menu (-1 for end, or specific position index)",
+                  default: -1
+                },
+                
+                // For removeItem action
+                itemId: { 
+                  type: "integer",
+                  description: "Menu item ID to remove (distinct from menuId, this is the ID of the specific item)"
+                },
+                
+                // For reorder action
+                items: { 
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: { 
+                        type: "integer",
+                        description: "Menu item ID to reposition"
+                      },
+                      parentId: { 
+                        type: "integer",
+                        description: "New parent menu item ID (0 for top-level)",
+                        default: 0
+                      },
+                      position: { 
+                        type: "integer",
+                        description: "New position index (0-based)",
+                        default: 0
+                      }
+                    },
+                    required: ["id"]
+                  },
+                  description: "Array of items with new ordering information including ID, parent, and position"
+                }
+              }
             }
-          }
+          },
+          required: ["action"]
         }
-      },
-      required: ['action']
+      }
     };
   }
 }

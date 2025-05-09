@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "wordpress-mcp": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "wordpress-mcp-server"
+      ]
+    }
+  }
+} 

@@ -700,6 +700,154 @@ class WordPressAPI {
       throw error;
     }
   }
+  
+  /**
+   * Get users with optional filters
+   */
+  async getUsers(params = {}) {
+    try {
+      const response = await this.client.get('/wp/v2/users', { params });
+      return response;
+    } catch (error) {
+      logger.error('Failed to fetch users', { error: error.message, params });
+      throw error;
+    }
+  }
+  
+  /**
+   * Get a specific user by ID
+   */
+  async getUser(userId) {
+    try {
+      const response = await this.client.get(`/wp/v2/users/${userId}`);
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to fetch user', { error: error.message, userId });
+      throw error;
+    }
+  }
+  
+  /**
+   * Create a new user
+   */
+  async createUser(userData) {
+    try {
+      const response = await this.client.post('/wp/v2/users', userData);
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to create user', { error: error.message });
+      throw error;
+    }
+  }
+  
+  /**
+   * Update an existing user
+   */
+  async updateUser(userId, userData) {
+    try {
+      const response = await this.client.put(`/wp/v2/users/${userId}`, userData);
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to update user', { error: error.message, userId });
+      throw error;
+    }
+  }
+  
+  /**
+   * Delete a user
+   */
+  async deleteUser(userId, force = false, reassign = null) {
+    try {
+      const params = { force };
+      if (reassign !== null) {
+        params.reassign = reassign;
+      }
+      
+      const response = await this.client.delete(`/wp/v2/users/${userId}`, { params });
+      return response.data;
+    } catch (error) {
+      logger.error('Failed to delete user', { error: error.message, userId });
+      throw error;
+    }
+  }
+  
+  /**
+   * Get available user roles
+   */
+  async getUserRoles() {
+    try {
+      // WordPress REST API doesn't have a dedicated endpoint for roles
+      // We'll need to use wp-json/wp/v2/users/me?context=edit to get the roles
+      const response = await this.client.get('/wp/v2/users/me', { params: { context: 'edit' } });
+      return response.data.roles;
+    } catch (error) {
+      logger.error('Failed to fetch user roles', { error: error.message });
+      throw error;
+    }
+  }
+  
+  /**
+   * Get user meta
+   * Note: WordPress REST API doesn't have a dedicated endpoint for user meta
+   * We need to use a custom endpoint or fall back to WordPress's internal functions
+   */
+  async getUserMeta(userId, key = null) {
+    try {
+      // If your WordPress installation has the WP REST User Meta plugin or similar,
+      // you can use a dedicated endpoint, otherwise we'll get the user with context=edit
+      const response = await this.client.get(`/wp/v2/users/${userId}`, { params: { context: 'edit' } });
+      
+      // If a specific key is requested, return just that meta value
+      if (key && response.data.meta && response.data.meta[key] !== undefined) {
+        return { [key]: response.data.meta[key] };
+      }
+      
+      // Otherwise return all meta
+      return response.data.meta || {};
+    } catch (error) {
+      logger.error('Failed to fetch user meta', { error: error.message, userId, key });
+      throw error;
+    }
+  }
+  
+  /**
+   * Update user meta
+   */
+  async updateUserMeta(userId, key, value) {
+    try {
+      // Similar to getUserMeta, we need a custom endpoint or use the user update endpoint
+      // Here we'll use the user update endpoint with meta in the payload
+      const userData = {
+        meta: {
+          [key]: value
+        }
+      };
+      
+      const response = await this.client.put(`/wp/v2/users/${userId}`, userData);
+      return response.data.meta || {};
+    } catch (error) {
+      logger.error('Failed to update user meta', { error: error.message, userId, key });
+      throw error;
+    }
+  }
+  
+  /**
+   * Reset user password
+   * Note: WordPress REST API doesn't have a built-in endpoint for this
+   * You might need to create a custom endpoint or use a plugin
+   */
+  async resetUserPassword(userId) {
+    try {
+      // This is a placeholder. In a real implementation, you'd either:
+      // 1. Call a custom REST endpoint added by a plugin
+      // 2. Use a different authentication method to call wp_send_password_reset()
+      // For now, we'll throw an error with instructions
+      throw new Error('Password reset requires a custom endpoint. Please install a REST API password reset plugin or implement a custom endpoint.');
+    } catch (error) {
+      logger.error('Failed to reset user password', { error: error.message, userId });
+      throw error;
+    }
+  }
 }
 
 module.exports = WordPressAPI; 

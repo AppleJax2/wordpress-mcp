@@ -30,6 +30,25 @@ class BaseTool {
   }
   
   /**
+   * Default schema implementation for MCP compatibility
+   * This should be overridden by subclasses with their specific schemas
+   */
+  getSchema() {
+    return {
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
+          properties: {},
+          required: []
+        }
+      }
+    };
+  }
+  
+  /**
    * Handle and log errors
    */
   handleError(error, methodName) {

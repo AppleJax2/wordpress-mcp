@@ -9,6 +9,7 @@ An MCP (Multi-agent Conversation Protocol) server for WordPress automation and m
 - **Theme Customization**: Modify theme settings, including Divi theme
 - **GeoDirectory Plugin Support**: Dedicated tools for the GeoDirectory plugin
 - **MCP Integration**: Provides JSON Schema metadata for ChatGPT integration
+- **Smithery Compatible**: Can be published and installed via Smithery CLI
 
 ## Tools
 
@@ -26,6 +27,8 @@ The server provides the following tools:
 - Application Password generated for your WordPress user
 
 ## Installation
+
+### Standard Installation
 
 1. Clone this repository:
    ```bash
@@ -48,15 +51,66 @@ The server provides the following tools:
    HEADLESS=false
    ```
 
+### Installing via Smithery
+
+For a streamlined installation process using Smithery:
+
+1. Install the server globally via Smithery:
+   ```bash
+   npx @smithery/cli@latest install wordpress-mcp-server
+   ```
+
+2. Set up your WordPress credentials:
+   ```bash
+   npx @smithery/cli@latest config wordpress-mcp-server --set WP_SITE_URL=https://your-wordpress-site.com --set WP_USERNAME=your_username --set WP_APP_PASSWORD=your_app_password
+   ```
+
+3. Run the server:
+   ```bash
+   npx @smithery/cli@latest run wordpress-mcp-server
+   ```
+
 ## Usage
 
 ### Starting the Server
 
+#### Standard Method
 ```bash
 npm start
 ```
 
-The server will be available at http://localhost:3000.
+#### Via Smithery
+```bash
+npx @smithery/cli@latest run wordpress-mcp-server
+```
+
+The server will be available at http://localhost:3001 by default.
+
+### Using with Cursor IDE
+
+To use the WordPress MCP Server with Cursor IDE:
+
+1. Create or update your `mcp.json` file in Cursor's config directory:
+   ```json
+   {
+     "mcpServers": {
+       "wordpress-mcp": {
+         "command": "cmd",
+         "args": [
+           "/c",
+           "npx",
+           "-y",
+           "@smithery/cli@latest",
+           "run",
+           "wordpress-mcp-server"
+         ]
+       }
+     }
+   }
+   ```
+
+2. Restart Cursor IDE to load the new configuration.
+3. You should now see WordPress tools available in the Cursor chat interface.
 
 ### Using the Tools
 
@@ -131,6 +185,16 @@ curl -X POST http://localhost:3000/tools/wordpress_geodirectory -H "Content-Type
   }
 }'
 ```
+
+## Publishing to Smithery
+
+If you've made improvements to this server and want to publish it to Smithery:
+
+1. Update version in `package.json` and `smithery.json`
+2. Run the publishing command:
+   ```bash
+   npm run publish:smithery
+   ```
 
 ## MCP Integration
 

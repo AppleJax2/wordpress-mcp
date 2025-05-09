@@ -313,31 +313,40 @@ class AuthManagerTool extends BaseTool {
    */
   getSchema() {
     return {
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: ['verify', 'store', 'clear', 'test'],
-          description: 'Action to perform with WordPress credentials'
-        },
-        credentials: {
-          type: 'object',
-          description: 'WordPress credentials (for store/test actions)',
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
           properties: {
-            siteUrl: {
-              type: 'string',
-              description: 'WordPress site URL'
+            action: {
+              type: "string",
+              enum: ["verify", "store", "clear", "test"],
+              description: "Action to perform with WordPress credentials",
+              default: "verify"
             },
-            username: {
-              type: 'string',
-              description: 'WordPress username'
-            },
-            appPassword: {
-              type: 'string',
-              description: 'WordPress application password'
+            credentials: {
+              type: "object",
+              description: "WordPress credentials (required for 'store' and 'test' actions)",
+              properties: {
+                siteUrl: {
+                  type: "string",
+                  description: "WordPress site URL (e.g., https://example.com)"
+                },
+                username: {
+                  type: "string",
+                  description: "WordPress administrator username"
+                },
+                appPassword: {
+                  type: "string",
+                  description: "WordPress application password for API access (not the regular login password)"
+                }
+              },
+              required: ["siteUrl", "username", "appPassword"]
             }
           },
-          required: ['siteUrl', 'username', 'appPassword']
+          required: ["action"]
         }
       }
     };

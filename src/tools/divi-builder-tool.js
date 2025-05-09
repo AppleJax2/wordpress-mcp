@@ -722,91 +722,118 @@ class DiviBuilderTool extends BaseTool {
    */
   getSchema() {
     return {
-      type: 'object',
-      properties: {
-        operation: {
-          type: 'string',
-          enum: [
-            'createLayout',
-            'editLayout',
-            'addModule',
-            'addSection',
-            'addRow',
-            'saveTemplate',
-            'loadTemplate',
-            'styleElement',
-            'duplicateElement',
-            'deleteElement'
-          ],
-          description: 'The operation to perform with the Divi Builder'
-        },
-        pageId: {
-          type: 'string',
-          description: 'The ID of the page to edit (required for all operations except createLayout)'
-        },
-        title: {
-          type: 'string',
-          description: 'Title of the page (for createLayout operation)'
-        },
-        content: {
-          type: 'string',
-          description: 'Initial content of the page (for createLayout operation)'
-        },
-        layoutStructure: {
-          type: 'object',
-          description: 'JSON structure defining the layout to build'
-        },
-        moduleType: {
-          type: 'string',
-          description: 'Type of Divi module to add (e.g., Text, Image, Slider)'
-        },
-        moduleSettings: {
-          type: 'object',
-          description: 'Settings to apply to the module'
-        },
-        sectionSettings: {
-          type: 'object',
-          description: 'Settings to apply to the section'
-        },
-        rowSettings: {
-          type: 'object',
-          description: 'Settings to apply to the row'
-        },
-        columnLayout: {
-          type: 'string',
-          description: 'Column layout for a row (e.g., 1_1, 1_2_1_2, 1_3_1_3_1_3)'
-        },
-        templateName: {
-          type: 'string',
-          description: 'Name of the template to save or load'
-        },
-        global: {
-          type: 'boolean',
-          description: 'Whether to save the template as global'
-        },
-        elementId: {
-          type: 'string',
-          description: 'ID of the element to manipulate'
-        },
-        styleSettings: {
-          type: 'object',
-          description: 'Styling settings to apply to an element'
-        },
-        parentSectionId: {
-          type: 'string',
-          description: 'ID of the parent section to add a row to'
-        },
-        parentRowId: {
-          type: 'string',
-          description: 'ID of the parent row to add a module to'
-        },
-        position: {
-          type: 'string',
-          enum: ['top', 'bottom'],
-          description: 'Position to add a new section (top or bottom)'
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
+          properties: {
+            operation: {
+              type: "string",
+              enum: [
+                "createLayout",
+                "editLayout",
+                "addModule",
+                "addSection",
+                "addRow",
+                "saveTemplate",
+                "loadTemplate",
+                "styleElement",
+                "duplicateElement",
+                "deleteElement"
+              ],
+              description: "The Divi Builder operation to perform"
+            },
+            pageId: {
+              type: "string",
+              description: "The ID of the WordPress page to edit (required for all operations except createLayout)"
+            },
+            title: {
+              type: "string",
+              description: "Title of the new page (required for createLayout operation)"
+            },
+            content: {
+              type: "string",
+              description: "Initial content of the page before Divi Builder is applied (for createLayout operation)"
+            },
+            layoutStructure: {
+              type: "object",
+              description: "JSON structure defining the Divi layout to build with sections, rows and modules",
+              properties: {
+                sections: {
+                  type: "array",
+                  description: "Array of sections in the layout",
+                  items: {
+                    type: "object"
+                  }
+                }
+              }
+            },
+            moduleType: {
+              type: "string",
+              description: "Type of Divi module to add (e.g., 'Text', 'Image', 'Slider', 'Button', 'Blurb')"
+            },
+            moduleSettings: {
+              type: "object",
+              description: "Settings to apply to the Divi module (key-value pairs matching Divi module options)"
+            },
+            sectionSettings: {
+              type: "object",
+              description: "Settings to apply to the Divi section (key-value pairs matching Divi section options)",
+              properties: {
+                type: {
+                  type: "string",
+                  enum: ["regular", "specialty", "fullwidth"],
+                  description: "Type of Divi section to create",
+                  default: "regular"
+                }
+              }
+            },
+            rowSettings: {
+              type: "object",
+              description: "Settings to apply to the Divi row (key-value pairs matching Divi row options)"
+            },
+            columnLayout: {
+              type: "string",
+              description: "Column layout for a Divi row (e.g., '1_1', '1_2_1_2', '1_3_1_3_1_3', '1_4_1_4_1_4')",
+              default: "1_1"
+            },
+            templateName: {
+              type: "string",
+              description: "Name of the Divi template to save or load"
+            },
+            global: {
+              type: "boolean",
+              description: "Whether to save the template as a global Divi template",
+              default: false
+            },
+            elementId: {
+              type: "string",
+              description: "ID of the Divi element to manipulate (section, row, or module)"
+            },
+            styleSettings: {
+              type: "object",
+              description: "Styling settings to apply to a Divi element (key-value pairs matching Divi design options)"
+            },
+            parentSectionId: {
+              type: "string",
+              description: "ID of the parent section to add a row to"
+            },
+            parentRowId: {
+              type: "string",
+              description: "ID of the parent row to add a module to"
+            },
+            position: {
+              type: "string",
+              enum: ["top", "bottom"],
+              description: "Position to add a new Divi section (top or bottom of the page)",
+              default: "bottom"
+            }
+          },
+          required: ["operation"]
         }
-      },
-      required: ['operation']
+      }
     };
   }
 }

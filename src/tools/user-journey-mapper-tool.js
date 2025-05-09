@@ -531,35 +531,61 @@ class UserJourneyMapperTool extends BaseTool {
    */
   getSchema() {
     return {
-      type: 'object',
-      required: [],
-      properties: {
-        userType: {
-          type: 'string',
-          enum: ['anonymous', 'customer', 'subscriber', 'administrator'],
-          default: 'anonymous',
-          description: 'Type of user to analyze'
-        },
-        scenario: {
-          type: 'string',
-          enum: ['general_browsing', 'product_purchase', 'content_discovery'],
-          default: 'general_browsing',
-          description: 'Specific scenario to map'
-        },
-        sampleSize: {
-          type: 'number',
-          default: 100,
-          description: 'Number of user sessions to analyze'
-        },
-        includeVisualData: {
-          type: 'boolean',
-          default: false,
-          description: 'Whether to include visual data in the analysis'
-        },
-        includeAnalyticsData: {
-          type: 'boolean',
-          default: true,
-          description: 'Whether to include analytics data'
+      type: "function",
+      function: {
+        name: this.name,
+        description: this.description,
+        parameters: {
+          type: "object",
+          properties: {
+            userType: {
+              type: "string",
+              enum: ["anonymous", "customer", "subscriber", "administrator"],
+              default: "anonymous",
+              description: "Type of WordPress user to analyze for journey mapping"
+            },
+            scenario: {
+              type: "string",
+              enum: ["general_browsing", "product_purchase", "content_discovery"],
+              default: "general_browsing",
+              description: "Specific user journey scenario to map and analyze"
+            },
+            sampleSize: {
+              type: "integer",
+              default: 100,
+              minimum: 10,
+              maximum: 1000,
+              description: "Number of user sessions to analyze for journey mapping (higher values provide more accurate results)"
+            },
+            includeVisualData: {
+              type: "boolean",
+              default: false,
+              description: "Whether to capture screenshots and visual elements during journey mapping (requires browser automation)"
+            },
+            includeAnalyticsData: {
+              type: "boolean",
+              default: true,
+              description: "Whether to include analytics data in the journey analysis (pageviews, bounce rates, etc.)"
+            },
+            generateVisualMap: {
+              type: "boolean",
+              default: false,
+              description: "Whether to generate a visual representation of the user journey map"
+            },
+            focusArea: {
+              type: "string",
+              enum: ["conversion", "engagement", "retention", "onboarding", "all"],
+              default: "all",
+              description: "Specific aspect of the journey to focus analysis on"
+            },
+            outputFormat: {
+              type: "string",
+              enum: ["detailed", "summary", "recommendations"],
+              default: "detailed",
+              description: "Level of detail to include in the journey mapping output"
+            }
+          },
+          required: []
         }
       }
     };
