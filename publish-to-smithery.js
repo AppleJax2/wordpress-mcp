@@ -15,8 +15,10 @@ const FILES_TO_INCLUDE = [
   'mcp-wrapper.js',
   'package.json',
   'smithery.json',
+  'smithery.yaml',
   'README.md',
-  '.env.example'
+  '.env.example',
+  'Dockerfile'
 ];
 
 // Use our already created .env.example file

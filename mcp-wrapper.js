@@ -362,8 +362,9 @@ debug('Starting MCP wrapper...');
       retries--;
       
       if (retries > 0) {
-        debug(`Waiting ${RETRY_DELAY}ms before retry...`);
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        const delay = getRetryDelay(MAX_RETRIES - retries);
+        debug(`Waiting ${Math.round(delay)}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }

@@ -39,12 +39,13 @@
     "nodemon": "^3.0.1"
   },
   "smithery": {
-    "package": "ididi/wordpress-mcp",
+    "name": "ididi/wordpress-mcp",
+    "version": "1.0.0",
+    "description": "WordPress MCP Server for automation and management",
     "command": "node",
     "args": [
       "mcp-wrapper.js"
     ],
-    "protocol": "stdio",
-    "description": "WordPress MCP Server for automation and management"
+    "protocol": "stdio"
   }
 }
