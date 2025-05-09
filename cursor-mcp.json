@@ -4,12 +4,18 @@
       "command": "cmd",
       "args": [
         "/c",
-        "npx",
-        "-y",
-        "@smithery/cli@latest",
-        "run",
-        "wordpress-mcp-server"
-      ]
+        "cd",
+        "C:/Users/ididi/wordpress-mcp-server",
+        "&&",
+        "node",
+        "mcp-wrapper.js"
+      ],
+      "environment": {
+        "PORT": "3001",
+        "WP_SITE_URL": "https://visitingvet.com",
+        "WP_USERNAME": "jackson",
+        "WP_APP_PASSWORD": "HjaD MKIh mvY0 B4DM smho xyfX"
+      }
     }
   }
-} 
+}
