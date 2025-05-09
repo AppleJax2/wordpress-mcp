@@ -53,8 +53,8 @@ startCommand:
       - WP_APP_PASSWORD
   commandFunction: |-
     (config) => ({
-      command: "node",
-      args: ["mcp-wrapper.js"],
+      command: "./start.sh",
+      args: [],
       env: {
         PORT: "3001",
         MAX_API_CONNECTIONS: "3",
