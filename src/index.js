@@ -35,7 +35,8 @@ app.get('/', (req, res) => {
     description: 'MCP server for WordPress automation and management',
     tools: IS_SMITHERY ? smitheryToolsMetadata : getBasicToolsMetadata(),
     isPartial: true,
-    supportsLazyLoading: true
+    supportsLazyLoading: true,
+    lazyLoadingEnabled: true
   });
 });
 
@@ -47,7 +48,8 @@ app.get('/tools', (req, res) => {
     return res.json({
       tools: smitheryToolsMetadata,
       isPartial: true, 
-      supportsLazyLoading: true
+      supportsLazyLoading: true,
+      lazyLoadingEnabled: true
     });
   }
   
@@ -55,7 +57,8 @@ app.get('/tools', (req, res) => {
   res.json({
     tools: getBasicToolsMetadata(),
     isPartial: true,
-    supportsLazyLoading: true
+    supportsLazyLoading: true,
+    lazyLoadingEnabled: true
   });
 });
 
@@ -100,7 +103,9 @@ app.post('/stream', async (req, res) => {
             description: "MCP server for WordPress automation and management"
           },
           capabilities: {
-            tools: {}
+            tools: {
+              supportsLazyLoading: true
+            }
           }
         }
       });
@@ -120,7 +125,8 @@ app.post('/stream', async (req, res) => {
           result: {
             tools: smitheryToolsMetadata,
             isPartial: true,
-            supportsLazyLoading: true
+            supportsLazyLoading: true,
+            lazyLoadingEnabled: true
           }
         });
       }
@@ -132,7 +138,8 @@ app.post('/stream', async (req, res) => {
         result: {
           tools: getBasicToolsMetadata(),
           isPartial: true,
-          supportsLazyLoading: true
+          supportsLazyLoading: true,
+          lazyLoadingEnabled: true
         }
       });
       

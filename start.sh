@@ -14,6 +14,9 @@ if [ -z "$WP_SITE_URL" ]; then
   export WP_SITE_URL="https://visitingvet.com"
 fi
 
+# Ensure correct protocol version for Smithery
+export MCP_PROTOCOL_VERSION="1.0"
+
 # For Smithery deployments, ensure compatibility mode is active
 if [ "$SMITHERY" = "true" ]; then
   echo "Enabling Smithery compatibility mode for faster scanning"

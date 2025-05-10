@@ -7,6 +7,7 @@ protocol: stdio # This describes the MCP protocol for tools
 mcp:
   protocolVersion: "1.0"
   maxConnections: 5
+  lazyLoadingEnabled: true
 
 # Command to start the server for Smithery Hosted Deployment
 startCommand:

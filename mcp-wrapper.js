@@ -191,7 +191,7 @@ rl.on('line', async (line) => {
     
     // Handle the request
     if (request.method === 'initialize') {
-      debug('Handling initialize request');
+      debug('Handling initialize request with protocol version 1.0');
       
       // Send initialize response
       const response = {
@@ -205,7 +205,9 @@ rl.on('line', async (line) => {
             description: "MCP server for WordPress automation and management"
           },
           capabilities: {
-            tools: {}
+            tools: {
+              supportsLazyLoading: true
+            }
           }
         }
       };
@@ -222,7 +224,8 @@ rl.on('line', async (line) => {
           params: {
             tools: minimalToolsList,
             isPartial: true,
-            supportsLazyLoading: true
+            supportsLazyLoading: true,
+            lazyLoadingEnabled: true
           }
         };
         
@@ -245,7 +248,8 @@ rl.on('line', async (line) => {
           params: {
             tools: tools || [],
             isPartial: true,
-            supportsLazyLoading: true
+            supportsLazyLoading: true,
+            lazyLoadingEnabled: true
           }
         };
         
@@ -263,7 +267,8 @@ rl.on('line', async (line) => {
             params: {
               tools: minimalToolsList,
               isPartial: true,
-              supportsLazyLoading: true
+              supportsLazyLoading: true,
+              lazyLoadingEnabled: true
             }
           };
           
@@ -495,7 +500,8 @@ process.on('SIGTERM', () => {
           params: {
             tools: tools || [],
             isPartial: true,
-            supportsLazyLoading: true
+            supportsLazyLoading: true,
+            lazyLoadingEnabled: true
           }
         };
         
