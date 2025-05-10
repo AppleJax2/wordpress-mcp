@@ -77,7 +77,7 @@ app.post('/mcp', async (req, res) => {
         jsonrpc: "2.0",
         id: message.id,
         result: {
-          protocolVersion: "2023-07-01",
+          protocolVersion: "1.0",
           serverInfo: {
             name: "WordPress MCP Server",
             version: "1.0.0",
@@ -95,14 +95,12 @@ app.post('/mcp', async (req, res) => {
     else if (message.method === 'tools/list') {
       logger.info('Processing tools/list request from Smithery', { id: message.id });
       
-      // Always send lightweight metadata for Smithery
+      // Simplified response format for Smithery compatibility
       return res.json({
         jsonrpc: "2.0",
         id: message.id,
         result: {
-          tools: smitheryToolsMetadata,
-          isPartial: false, // Set to false for Smithery compatibility
-          supportsLazyLoading: false // Set to false for Smithery compatibility
+          tools: smitheryToolsMetadata
         }
       });
     }
@@ -269,17 +267,13 @@ app.post('/stream', async (req, res) => {
       // Handle tools list request with lazy loading
       logger.info('Processing tools/list request', { id: message.id });
       
-      // In Smithery mode, return ultra-lightweight metadata
       if (IS_SMITHERY || (req.headers['user-agent'] && req.headers['user-agent'].includes('smithery'))) {
         logger.info('Smithery scan detected - returning minimal metadata for fast scanning');
         return res.json({
           jsonrpc: "2.0",
           id: message.id,
           result: {
-            tools: smitheryToolsMetadata,
-            isPartial: true,
-            supportsLazyLoading: true,
-            lazyLoadingEnabled: true
+            tools: smitheryToolsMetadata
           }
         });
       }
@@ -289,10 +283,7 @@ app.post('/stream', async (req, res) => {
         jsonrpc: "2.0",
         id: message.id,
         result: {
-          tools: getBasicToolsMetadata(),
-          isPartial: true,
-          supportsLazyLoading: true,
-          lazyLoadingEnabled: true
+          tools: getBasicToolsMetadata()
         }
       });
       
