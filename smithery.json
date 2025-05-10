@@ -56,7 +56,7 @@
       },
       "required": ["WP_SITE_URL", "WP_USERNAME", "WP_APP_PASSWORD"]
     },
-    "commandFunction": "(config) => ({\n  command: \"./start.sh\",\n  args: [],\n  env: {\n    PORT: \"3001\",\n    MAX_API_CONNECTIONS: \"3\",\n    MAX_BROWSER_CONNECTIONS: \"1\",\n    CONNECTION_TIMEOUT: \"10000\",\n    SMITHERY: \"true\",\n    WP_SITE_URL: config.WP_SITE_URL,\n    WP_USERNAME: config.WP_USERNAME,\n    WP_APP_PASSWORD: config.WP_APP_PASSWORD,\n    NODE_ENV: config.NODE_ENV || \"production\",\n    HEADLESS: config.HEADLESS ? \"true\" : \"false\",\n    SLOWMO: String(config.SLOWMO || 0)\n  }\n})"
+    "commandFunction": "(config) => ({\n  command: \"./start.sh\",\n  args: [],\n  env: {\n    PORT: \"3001\",\n    MAX_API_CONNECTIONS: \"3\",\n    MAX_BROWSER_CONNECTIONS: \"1\",\n    CONNECTION_TIMEOUT: \"10000\",\n    SMITHERY: \"true\",\n    NODE_OPTIONS: \"--max-old-space-size=512\",\n    WP_SITE_URL: config.WP_SITE_URL,\n    WP_USERNAME: config.WP_USERNAME,\n    WP_APP_PASSWORD: config.WP_APP_PASSWORD,\n    NODE_ENV: config.NODE_ENV || \"production\",\n    HEADLESS: config.HEADLESS ? \"true\" : \"false\",\n    SLOWMO: String(config.SLOWMO || 0),\n    DEBUG_MCP: config.DEBUG_MCP ? \"true\" : \"false\",\n    MCP_PROTOCOL_VERSION: \"2023-07-01\"\n  }\n})"
   },
   "author": "",
   "license": "MIT",
@@ -69,8 +69,9 @@
   ],
   "mcp": {
     "protocol": "stdio",
-    "protocolVersion": "1.0",
-    "max_connections": 5
+    "protocolVersion": "2023-07-01",
+    "max_connections": 5,
+    "lazyLoadingEnabled": true
   },
   "resources": {
     "memory": "low",

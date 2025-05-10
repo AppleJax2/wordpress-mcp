@@ -15,7 +15,7 @@ if [ -z "$WP_SITE_URL" ]; then
 fi
 
 # Ensure correct protocol version for Smithery
-export MCP_PROTOCOL_VERSION="1.0"
+export MCP_PROTOCOL_VERSION="2023-07-01"
 
 # For Smithery deployments, ensure compatibility mode is active
 if [ "$SMITHERY" = "true" ]; then
