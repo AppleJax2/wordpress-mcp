@@ -9,7 +9,15 @@
 
 const readline = require('readline');
 const fetch = require('node-fetch');
-const url = 'http://localhost:3001';
+
+// Determine the correct URL based on environment
+let baseUrl = 'http://localhost:3001';
+if (process.env.RENDER) {
+  // Use the Render service internal URL when running on Render.com
+  baseUrl = `http://localhost:${process.env.PORT || 3001}`;
+}
+const url = baseUrl;
+
 const path = require('path');
 const { smitheryToolsMetadata } = require(path.join(__dirname, 'src', 'tools', 'index.js'));
 
@@ -476,7 +484,9 @@ process.on('SIGTERM', () => {
       } catch (error) {
         debug(`Background server check failed: ${error.message}`);
         // Try to start the server if needed
-        startServerForSmithery();
+        if (!process.env.RENDER) {
+          startServerForSmithery();
+        }
       }
     }, 100);
     return;
@@ -547,7 +557,7 @@ process.on('SIGTERM', () => {
     debug('Failed to connect to the server after multiple retries.');
     console.error('[ERROR] Failed to connect to the HTTP server after multiple retries.');
     
-    if (IS_SMITHERY) {
+    if (IS_SMITHERY && !process.env.RENDER) {
       startServerForSmithery();
     }
   }
