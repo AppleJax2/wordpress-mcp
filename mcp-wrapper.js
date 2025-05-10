@@ -48,6 +48,12 @@ console.error(`Target URL: ${url}`);
 console.error(`Node version: ${process.version}`);
 console.error(`Debug mode: ${DEBUG ? 'enabled' : 'disabled'}`);
 
+// Add port check before starting server
+// Check if we're running in a deployment where HTTP server is already running
+if (process.env.RENDER) {
+  debug('Running on Render.com - assuming HTTP server is managed externally');
+}
+
 // Minimal tools list for ultra-fast Smithery response
 const minimalToolsList = smitheryToolsMetadata;
 
