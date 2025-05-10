@@ -69,3 +69,41 @@ To add a new tool, create a new file in the `src/tools` directory following the 
 ## License
 
 MIT 
+
+## Deployment on Render.com
+
+This server can be deployed on Render.com using the provided `render.yaml` configuration:
+
+1. Fork this repository
+2. Sign up for a Render account
+3. Connect your GitHub account
+4. Create a new Web Service from your forked repository
+5. Add the following environment secrets:
+   - `WP_SITE_URL` - Your WordPress site URL
+   - `WP_USERNAME` - Your WordPress admin username
+   - `WP_APP_PASSWORD` - Your WordPress application password
+
+Once deployed, your server will be available at `https://wordpress-mcp.onrender.com` or a similar URL provided by Render.
+
+## Connect Cursor to Remote Server
+
+To connect Cursor to your remote Render-hosted MCP server, update your Cursor MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "wordpress-mcp-remote": {
+      "command": "npx",
+      "args": [
+        "@smithery/cli@latest",
+        "connect",
+        "http",
+        "--url",
+        "https://wordpress-mcp.onrender.com/mcp"
+      ]
+    }
+  }
+}
+```
+
+Replace `https://wordpress-mcp.onrender.com` with your actual Render.com URL. 
