@@ -46,7 +46,7 @@ const startupNotification = {
   jsonrpc: "2.0",
   id: "1",
   result: {
-    protocolVersion: "2023-11-15",
+    protocolVersion: "2023-07-01",
     serverInfo: {
       name: "WordPress MCP Server",
       version: "1.0.0",
@@ -165,7 +165,7 @@ rl.on('line', async (line) => {
         jsonrpc: "2.0",
         id: request.id,
         result: {
-          protocolVersion: "2023-11-15",
+          protocolVersion: "2023-07-01",
           serverInfo: {
             name: "WordPress MCP Server",
             version: "1.0.0",
