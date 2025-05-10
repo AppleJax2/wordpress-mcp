@@ -233,7 +233,7 @@ rl.on('line', async (line) => {
         jsonrpc: "2.0",
         id: request.id,
         result: {
-          protocolVersion: "1.0",
+          protocolVersion: "2023-07-01",
           serverInfo: {
             name: "WordPress MCP Server",
             version: "1.0.0",
@@ -249,18 +249,20 @@ rl.on('line', async (line) => {
       console.log(JSON.stringify(response));
       debug('Sent initialize response');
       
-      // In Smithery mode, use the minimal tools list to prevent timeout
+      // In Smithery mode, use the minimal tools list with lazy loading
       if (IS_SMITHERY) {
         const notification = {
           jsonrpc: "2.0",
           method: "tools/refresh",
           params: {
-            tools: minimalToolsList
+            tools: minimalToolsList,
+            isPartial: true,
+            supportsLazyLoading: true
           }
         };
         
         console.log(JSON.stringify(notification));
-        debug('Sent minimal tools notification for Smithery');
+        debug('Sent minimal tools notification for Smithery with lazy loading support');
         return;
       }
       
@@ -271,33 +273,37 @@ rl.on('line', async (line) => {
         const tools = await toolsResponse.json();
         debug(`Fetched basic metadata for ${tools.length} tools`);
         
-        // Send tools notification with basic metadata
+        // Send tools notification with basic metadata and lazy loading support
         const notification = {
           jsonrpc: "2.0",
           method: "tools/refresh",
           params: {
-            tools: tools || []
+            tools: tools || [],
+            isPartial: true,
+            supportsLazyLoading: true
           }
         };
         
         console.log(JSON.stringify(notification));
-        debug('Sent tools notification with basic metadata');
+        debug('Sent tools notification with basic metadata and lazy loading support');
       } catch (error) {
         debug(`Error fetching tool metadata: ${error.message}`);
         console.error(`[ERROR] Could not fetch tool metadata: ${error.message}`);
         
-        // If fetch fails, still send a minimal tools list in Smithery mode
+        // If fetch fails, still send a minimal tools list in Smithery mode with lazy loading
         if (IS_SMITHERY) {
           const fallbackNotification = {
             jsonrpc: "2.0",
             method: "tools/refresh",
             params: {
-              tools: minimalToolsList
+              tools: minimalToolsList,
+              isPartial: true,
+              supportsLazyLoading: true
             }
           };
           
           console.log(JSON.stringify(fallbackNotification));
-          debug('Sent fallback minimal tools notification for Smithery');
+          debug('Sent fallback minimal tools notification for Smithery with lazy loading support');
         }
       }
     } 
@@ -517,17 +523,19 @@ process.on('SIGTERM', () => {
         const tools = await toolsResponse.json();
         debug(`Fetched basic metadata for ${tools.length} tools`);
         
-        // Send tools notification
+        // Send tools notification with lazy loading support
         const notification = {
           jsonrpc: "2.0",
           method: "tools/refresh",
           params: {
-            tools: tools || []
+            tools: tools || [],
+            isPartial: true,
+            supportsLazyLoading: true
           }
         };
         
         console.log(JSON.stringify(notification));
-        debug('Sent tools notification, ready for requests');
+        debug('Sent tools notification with lazy loading support, ready for requests');
         
         success = true;
       } else {
