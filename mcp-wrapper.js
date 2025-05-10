@@ -153,6 +153,9 @@ async function fetchWithRetry(url, options = {}, retries = MAX_RETRIES) {
   throw lastError;
 }
 
+// Cached tool schemas - store schemas as they are retrieved
+const toolSchemaCache = new Map();
+
 // Listen for input from stdin (JSON-RPC requests from Cursor)
 rl.on('line', async (line) => {
   debug(`Received line: ${line}`);
@@ -187,14 +190,14 @@ rl.on('line', async (line) => {
       console.log(JSON.stringify(response));
       debug('Sent initialize response');
       
-      // Fetch tools from the HTTP server with retries
+      // Fetch basic tool metadata (names and descriptions only) from the HTTP server with retries
       try {
-        debug('Fetching tools...');
+        debug('Fetching tool metadata...');
         const toolsResponse = await fetchWithRetry(`${url}/tools`);
         const tools = await toolsResponse.json();
-        debug(`Fetched ${tools.length} tools`);
+        debug(`Fetched basic metadata for ${tools.length} tools`);
         
-        // Send tools notification
+        // Send tools notification with basic metadata
         const notification = {
           jsonrpc: "2.0",
           method: "tools/refresh",
@@ -204,19 +207,56 @@ rl.on('line', async (line) => {
         };
         
         console.log(JSON.stringify(notification));
-        debug('Sent tools notification');
+        debug('Sent tools notification with basic metadata');
       } catch (error) {
-        debug(`Error fetching tools: ${error.message}`);
-        console.error(`[ERROR] Could not fetch tools: ${error.message}`);
+        debug(`Error fetching tool metadata: ${error.message}`);
+        console.error(`[ERROR] Could not fetch tool metadata: ${error.message}`);
       }
     } 
     else if (request.method === 'callTool') {
       debug(`Handling callTool request for tool: ${request.params?.name}`);
       
+      // Check if we need to fetch tool schema first
+      const toolName = request.params?.name;
+      
+      // Only fetch the schema if we don't have it cached
+      if (toolName && !toolSchemaCache.has(toolName)) {
+        try {
+          debug(`Fetching schema for tool: ${toolName}`);
+          
+          // Make a request to get the tool schema
+          const schemaResponse = await fetchWithRetry(`${url}/stream`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              jsonrpc: "2.0",
+              id: `schema-${Date.now()}`,
+              method: "tools/getSchema",
+              params: {
+                name: toolName
+              }
+            })
+          });
+          
+          const schemaResult = await schemaResponse.json();
+          
+          if (schemaResult.result?.schema) {
+            debug(`Received schema for tool: ${toolName}`);
+            toolSchemaCache.set(toolName, schemaResult.result.schema);
+          }
+        } catch (error) {
+          debug(`Error fetching tool schema: ${error.message}`);
+          // Continue with the tool call even if schema fetch fails
+        }
+      }
+      
       // Forward to the HTTP server
       try {
         const { name, parameters } = request.params;
         
+        // Make the tool call
         const toolResponse = await fetchWithRetry(`${url}/tools/${name}`, {
           method: 'POST',
           headers: {
@@ -341,7 +381,7 @@ process.on('SIGTERM', () => {
   }, 3000);
 });
 
-// Try to connect to the server and fetch tools in the background with better error handling
+// Try to connect to the server and fetch tool metadata in the background with better error handling
 (async () => {
   let retries = MAX_RETRIES;
   let success = false;
@@ -358,18 +398,18 @@ process.on('SIGTERM', () => {
       if (response.ok) {
         debug('Server is running!');
         
-        // Fetch tools
+        // Fetch basic tool metadata
         const toolsResponse = await fetch(`${url}/tools`, {
           timeout: 5000,
           agent: httpAgent
         });
         
         if (!toolsResponse.ok) {
-          throw new Error(`HTTP error ${toolsResponse.status} getting tools`);
+          throw new Error(`HTTP error ${toolsResponse.status} getting tool metadata`);
         }
         
         const tools = await toolsResponse.json();
-        debug(`Fetched ${tools.length} tools`);
+        debug(`Fetched basic metadata for ${tools.length} tools`);
         
         // Send tools notification
         const notification = {

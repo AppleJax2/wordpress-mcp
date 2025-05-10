@@ -4,7 +4,12 @@
  */
 const express = require('express');
 const cors = require('cors');
-const { wordpressTools, wordpressToolsMetadata } = require('./tools');
+const { 
+  wordpressTools, 
+  wordpressToolsMetadata, 
+  getBasicToolsMetadata, 
+  getFullToolMetadata 
+} = require('./tools');
 const config = require('./config');
 const logger = require('./utils/logger');
 
@@ -21,13 +26,14 @@ app.get('/', (req, res) => {
     name: 'WordPress MCP Server',
     version: '1.0.0',
     description: 'MCP server for WordPress automation and management',
-    tools: wordpressToolsMetadata
+    tools: getBasicToolsMetadata()
   });
 });
 
-// Tools metadata endpoint
+// Tools metadata endpoint - using lazy loading
 app.get('/tools', (req, res) => {
-  res.json(wordpressToolsMetadata);
+  // Return basic metadata (names and descriptions only) for quick response
+  res.json(getBasicToolsMetadata());
 });
 
 // REVISED MCP Protocol Implementation
@@ -79,25 +85,65 @@ app.post('/stream', async (req, res) => {
       logger.info('Sent initialize response', { id: message.id });
     } 
     else if (message.method === 'tools/list') {
-      // Handle tools list request
+      // Handle tools list request with lazy loading
       logger.info('Processing tools/list request', { id: message.id });
+      
+      // Only send basic metadata (names and descriptions) for quick response
+      res.json({
+        jsonrpc: "2.0",
+        id: message.id,
+        result: {
+          tools: getBasicToolsMetadata()
+        }
+      });
+      
+      logger.info('Sent tools list response with basic metadata', { id: message.id });
+    }
+    // Add a new endpoint for getting detailed tool schema - on demand
+    else if (message.method === 'tools/getSchema') {
+      logger.info('Processing tools/getSchema request', { id: message.id, tool: message.params?.name });
+      
+      if (!message.params?.name) {
+        return res.status(400).json({
+          jsonrpc: "2.0",
+          id: message.id,
+          error: {
+            code: -32602,
+            message: "Invalid params: tool name required"
+          }
+        });
+      }
+      
+      const toolSchema = getFullToolMetadata(message.params.name);
+      
+      if (!toolSchema) {
+        return res.status(404).json({
+          jsonrpc: "2.0",
+          id: message.id,
+          error: {
+            code: -32601,
+            message: `Tool '${message.params.name}' not found`
+          }
+        });
+      }
       
       res.json({
         jsonrpc: "2.0",
         id: message.id,
         result: {
-          tools: wordpressToolsMetadata
+          schema: toolSchema
         }
       });
       
-      logger.info('Sent tools list response', { id: message.id });
+      logger.info('Sent tool schema', { id: message.id, tool: message.params.name });
     }
     else if (message.method === 'callTool') {
       // Process tool call
       const { name, parameters } = message.params;
       logger.info('Processing callTool request', { id: message.id, tool: name });
       
-      if (!wordpressTools[name]) {
+      const tool = wordpressTools[name];
+      if (!tool) {
         logger.error(`Tool not found: ${name}`);
         return res.status(404).json({
           jsonrpc: "2.0",
@@ -111,7 +157,6 @@ app.post('/stream', async (req, res) => {
       
       try {
         // Execute the tool with the provided parameters
-        const tool = wordpressTools[name];
         const result = await tool.execute(parameters);
         
         logger.info(`Tool execution complete: ${name}`, { success: result.success, id: message.id });
@@ -173,7 +218,8 @@ app.post('/tools/:toolName', async (req, res) => {
   logger.info(`Tool execution request: ${toolName}`, { params });
   
   // Check if tool exists
-  if (!wordpressTools[toolName]) {
+  const tool = wordpressTools[toolName];
+  if (!tool) {
     logger.error(`Tool not found: ${toolName}`);
     return res.status(404).json({
       success: false,
@@ -183,7 +229,6 @@ app.post('/tools/:toolName', async (req, res) => {
   
   try {
     // Execute the tool with the provided parameters
-    const tool = wordpressTools[toolName];
     const result = await tool.execute(params);
     
     logger.info(`Tool execution complete: ${toolName}`, {

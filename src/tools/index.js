@@ -26,96 +26,8 @@ const UserJourneyMapperTool = require('./user-journey-mapper-tool');
 const FormAnalysisTool = require('./form-analysis-tool');
 const NavigationOptimizerTool = require('./navigation-optimizer-tool');
 
-// Initialize all tools
-const siteInfoTool = new SiteInfoTool();
-const createPageTool = new CreatePageTool();
-const geoDirectoryTool = new GeoDirectoryTool();
-const themeCustomizerTool = new ThemeCustomizerTool();
-const themeManagerTool = new ThemeManagerTool();
-const authManagerTool = new AuthManagerTool();
-const mediaManagerTool = new MediaManagerTool();
-const contentManagerTool = new ContentManagerTool();
-const pluginManagerTool = new PluginManagerTool();
-const menuManagerTool = new MenuManagerTool();
-const wooCommerceManagerTool = new WooCommerceManagerTool();
-const diviBuilderTool = new DiviBuilderTool();
-const widgetManagerTool = new WidgetManagerTool();
-const userManagerTool = new UserManagerTool();
-const seoManagerTool = new SEOManagerTool();
-const settingsManagerTool = new SettingsManagerTool();
-const siteMapperTool = new SiteMapperTool();
-const designAnalyzerTool = new DesignAnalyzerTool();
-const sitePolisherTool = new SitePolisherTool();
-const contentAuditTool = new ContentAuditTool();
-const authenticatedUserAnalyzerTool = new AuthenticatedUserAnalyzerTool();
-const userJourneyMapperTool = new UserJourneyMapperTool();
-const formAnalysisTool = new FormAnalysisTool();
-const navigationOptimizerTool = new NavigationOptimizerTool();
-
-// Export tools registry
-const wordpressTools = {
-  [siteInfoTool.name]: siteInfoTool,
-  [createPageTool.name]: createPageTool,
-  [geoDirectoryTool.name]: geoDirectoryTool,
-  [themeCustomizerTool.name]: themeCustomizerTool,
-  [themeManagerTool.name]: themeManagerTool,
-  [authManagerTool.name]: authManagerTool,
-  [mediaManagerTool.name]: mediaManagerTool,
-  [contentManagerTool.name]: contentManagerTool,
-  [pluginManagerTool.name]: pluginManagerTool,
-  [menuManagerTool.name]: menuManagerTool,
-  [wooCommerceManagerTool.name]: wooCommerceManagerTool,
-  [diviBuilderTool.name]: diviBuilderTool,
-  [widgetManagerTool.name]: widgetManagerTool,
-  [userManagerTool.name]: userManagerTool,
-  [seoManagerTool.name]: seoManagerTool,
-  [settingsManagerTool.name]: settingsManagerTool,
-  [siteMapperTool.name]: siteMapperTool,
-  [designAnalyzerTool.name]: designAnalyzerTool,
-  [sitePolisherTool.name]: sitePolisherTool,
-  [contentAuditTool.name]: contentAuditTool,
-  [authenticatedUserAnalyzerTool.name]: authenticatedUserAnalyzerTool,
-  [userJourneyMapperTool.name]: userJourneyMapperTool,
-  [formAnalysisTool.name]: formAnalysisTool,
-  [navigationOptimizerTool.name]: navigationOptimizerTool
-};
-
-// Export tools metadata for MCP integration
-const wordpressToolsMetadata = Object.values(wordpressTools).map(tool => {
-  console.log(`Processing tool: ${tool.name}`);
-  if (typeof tool.getSchema !== 'function') {
-    console.error(`ERROR: Tool '${tool.name}' is missing the getSchema() method.`);
-    return null;
-  }
-  
-  // Get the schema from the tool
-  const schema = tool.getSchema();
-  
-  // Ensure the schema is in the correct format
-  if (!schema.type || !schema.function) {
-    console.error(`ERROR: Tool '${tool.name}' schema is not in the correct format.`);
-  return {
-      type: "function",
-      function: {
-    name: tool.name,
-    description: tool.description,
-        parameters: {
-          type: "object",
-          properties: {},
-          required: []
-        }
-      }
-    };
-  }
-  
-  return schema;
-}).filter(Boolean); // Remove any null entries
-
-module.exports = {
-  wordpressTools,
-  wordpressToolsMetadata,
-  
-  // Individual tool exports
+// Tool classes for lazy initialization
+const ToolClasses = {
   SiteInfoTool,
   CreatePageTool,
   GeoDirectoryTool,
@@ -124,7 +36,7 @@ module.exports = {
   AuthManagerTool,
   MediaManagerTool,
   ContentManagerTool,
-  PluginManagerTool,
+  PluginManagerTool, 
   MenuManagerTool,
   WooCommerceManagerTool,
   DiviBuilderTool,
@@ -140,4 +52,129 @@ module.exports = {
   UserJourneyMapperTool,
   FormAnalysisTool,
   NavigationOptimizerTool
+};
+
+// Store tool instances
+let toolInstances = {};
+
+// Lazily get a tool instance
+function getToolInstance(toolClassName) {
+  if (!toolInstances[toolClassName]) {
+    const ToolClass = ToolClasses[toolClassName];
+    if (!ToolClass) {
+      throw new Error(`Tool class not found: ${toolClassName}`);
+    }
+    toolInstances[toolClassName] = new ToolClass();
+  }
+  return toolInstances[toolClassName];
+}
+
+// Get a basic list of tool names and descriptions without full schema
+function getBasicToolsMetadata() {
+  return Object.keys(ToolClasses).map(className => {
+    const instance = getToolInstance(className);
+    return {
+      type: "function",
+      function: {
+        name: instance.name,
+        description: instance.description,
+        parameters: {
+          type: "object",
+          properties: {},
+          required: []
+        }
+      }
+    };
+  });
+}
+
+// Get full metadata for a specific tool
+function getFullToolMetadata(toolName) {
+  // Find the tool class that has the matching name
+  for (const className of Object.keys(ToolClasses)) {
+    const instance = getToolInstance(className);
+    if (instance.name === toolName) {
+      console.log(`Getting full schema for tool: ${toolName}`);
+      
+      if (typeof instance.getSchema !== 'function') {
+        console.error(`ERROR: Tool '${toolName}' is missing the getSchema() method.`);
+        return {
+          type: "function",
+          function: {
+            name: instance.name,
+            description: instance.description,
+            parameters: {
+              type: "object",
+              properties: {},
+              required: []
+            }
+          }
+        };
+      }
+      
+      return instance.getSchema();
+    }
+  }
+  
+  console.error(`ERROR: Tool not found: ${toolName}`);
+  return null;
+}
+
+// Get all tools metadata (used only when explicitly needed)
+function getAllToolsMetadata() {
+  return Object.keys(ToolClasses).map(className => {
+    const instance = getToolInstance(className);
+    
+    if (typeof instance.getSchema !== 'function') {
+      console.error(`ERROR: Tool '${instance.name}' is missing the getSchema() method.`);
+      return {
+        type: "function",
+        function: {
+          name: instance.name,
+          description: instance.description,
+          parameters: {
+            type: "object",
+            properties: {},
+            required: []
+          }
+        }
+      };
+    }
+    
+    return instance.getSchema();
+  }).filter(Boolean);
+}
+
+// Get a tool instance by name
+function getToolByName(toolName) {
+  for (const className of Object.keys(ToolClasses)) {
+    const instance = getToolInstance(className);
+    if (instance.name === toolName) {
+      return instance;
+    }
+  }
+  return null;
+}
+
+// On-demand tool registry for MCP
+const wordpressTools = new Proxy({}, {
+  get: (target, prop) => {
+    // Find and return the tool with matching name
+    return getToolByName(prop);
+  }
+});
+
+// Lazy-loaded tool metadata
+const wordpressToolsMetadata = getBasicToolsMetadata();
+
+module.exports = {
+  wordpressTools,
+  wordpressToolsMetadata,
+  getBasicToolsMetadata,
+  getFullToolMetadata,
+  getAllToolsMetadata,
+  getToolByName,
+  
+  // Individual tool class exports
+  ...ToolClasses
 }; 
