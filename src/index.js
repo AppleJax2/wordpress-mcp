@@ -96,7 +96,7 @@ app.post('/stream', async (req, res) => {
         jsonrpc: "2.0",
         id: message.id,
         result: {
-          protocolVersion: IS_SMITHERY ? "2023-07-01" : "1.0",
+          protocolVersion: "1.0",
           serverInfo: {
             name: "WordPress MCP Server",
             version: "1.0.0",
