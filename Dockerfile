@@ -2,7 +2,7 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Install dependencies for Puppeteer in Alpine
+# Install dependencies for Puppeteer in Alpine with correct packages
 RUN apk update && apk add --no-cache \
     chromium \
     nss \
@@ -12,20 +12,29 @@ RUN apk update && apk add --no-cache \
     ca-certificates \
     ttf-freefont \
     bash \
-    procps
+    procps \
+    dumb-init \
+    fontconfig \
+    udev
 
-# Tell Puppeteer to use the installed Chromium
+# Tell Puppeteer to use the installed Chromium and reduce resource usage
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
+    PUPPETEER_DISABLE_DEV_SHM_USAGE=true \
+    CHROME_PATH=/usr/bin/chromium-browser \
+    NODE_OPTIONS=--max-old-space-size=512
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
+# Install dependencies with clean install to ensure deterministic builds
 RUN npm ci --only=production --no-audit
 
 # Copy application code
 COPY . .
+
+# Create log directory with permissions
+RUN mkdir -p /app/logs && chmod 777 /app/logs
 
 # Make the startup script executable
 RUN chmod +x start.sh
@@ -37,10 +46,18 @@ ENV NODE_ENV=production \
     PORT=3001 \
     MAX_API_CONNECTIONS=3 \
     MAX_BROWSER_CONNECTIONS=1 \
-    SMITHERY=true
+    SMITHERY=true \
+    CONNECTION_TIMEOUT=10000
+
+# Set healthcheck to ensure container is running properly
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD wget -q --spider http://localhost:3001 || exit 1
 
 # Expose port
 EXPOSE 3001
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
 
 # Command will be provided by smithery.yaml
 CMD ["./start.sh"]

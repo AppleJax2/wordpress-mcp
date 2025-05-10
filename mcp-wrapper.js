@@ -16,25 +16,31 @@ const http = require('http');
 const https = require('https');
 const httpAgent = new http.Agent({ 
   keepAlive: true, 
-  maxSockets: 5,
+  maxSockets: 3,
   keepAliveMsecs: 3000,
   timeout: 10000
 });
 const httpsAgent = new https.Agent({ 
   keepAlive: true, 
-  maxSockets: 5,
+  maxSockets: 3,
   keepAliveMsecs: 3000,
   timeout: 10000
 });
 
-// Debug mode - set to true to see more information
-const DEBUG = true;
+// Debug mode - controlled by environment variable
+const DEBUG = process.env.DEBUG_MCP === 'true';
 
 function debug(...args) {
   if (DEBUG) {
     console.error('[DEBUG]', ...args);
   }
 }
+
+// Print startup information
+console.error(`Starting MCP wrapper for WordPress MCP Server`);
+console.error(`Target URL: ${url}`);
+console.error(`Node version: ${process.version}`);
+console.error(`Debug mode: ${DEBUG ? 'enabled' : 'disabled'}`);
 
 // Check for Smithery environment
 const IS_SMITHERY = process.env.SMITHERY === 'true';
@@ -62,9 +68,9 @@ const startupNotification = {
 console.log(JSON.stringify(startupNotification));
 
 // Retry configuration with exponential backoff
-const MAX_RETRIES = 7;
+const MAX_RETRIES = 5;
 const INITIAL_RETRY_DELAY = 500; // ms
-const MAX_RETRY_DELAY = 10000; // ms
+const MAX_RETRY_DELAY = 8000; // ms
 
 // Helper function to wait with jitter for more efficient retries
 function getRetryDelay(attempt) {
@@ -201,7 +207,7 @@ rl.on('line', async (line) => {
         debug('Sent tools notification');
       } catch (error) {
         debug(`Error fetching tools: ${error.message}`);
-        // Don't log to stdout as it would break the protocol
+        console.error(`[ERROR] Could not fetch tools: ${error.message}`);
       }
     } 
     else if (request.method === 'callTool') {
@@ -335,10 +341,7 @@ process.on('SIGTERM', () => {
   }, 3000);
 });
 
-// Keep the process alive
-debug('Starting MCP wrapper...');
-
-// Try to connect to the server and fetch tools in the background
+// Try to connect to the server and fetch tools in the background with better error handling
 (async () => {
   let retries = MAX_RETRIES;
   let success = false;
@@ -347,12 +350,24 @@ debug('Starting MCP wrapper...');
     try {
       debug(`Checking if server is running (${retries} retries left)...`);
       
-      const response = await fetch(`${url}`);
+      const response = await fetch(`${url}`, { 
+        timeout: 5000,
+        agent: httpAgent
+      });
+      
       if (response.ok) {
         debug('Server is running!');
         
         // Fetch tools
-        const toolsResponse = await fetch(`${url}/tools`);
+        const toolsResponse = await fetch(`${url}/tools`, {
+          timeout: 5000,
+          agent: httpAgent
+        });
+        
+        if (!toolsResponse.ok) {
+          throw new Error(`HTTP error ${toolsResponse.status} getting tools`);
+        }
+        
         const tools = await toolsResponse.json();
         debug(`Fetched ${tools.length} tools`);
         
@@ -369,6 +384,8 @@ debug('Starting MCP wrapper...');
         debug('Sent tools notification, ready for requests');
         
         success = true;
+      } else {
+        throw new Error(`HTTP error ${response.status} checking server`);
       }
     } catch (error) {
       debug(`Server check failed: ${error.message}`);
@@ -378,32 +395,66 @@ debug('Starting MCP wrapper...');
         const delay = getRetryDelay(MAX_RETRIES - retries);
         debug(`Waiting ${Math.round(delay)}ms before retry...`);
         await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        console.error(`[ERROR] Failed to connect to HTTP server at ${url}: ${error.message}`);
       }
     }
   }
   
   if (!success) {
-    debug('Failed to connect to the server after multiple retries. Please make sure the server is running with "npm start" in another terminal.');
+    debug('Failed to connect to the server after multiple retries.');
+    console.error('[ERROR] Failed to connect to the HTTP server after multiple retries.');
     
     if (IS_SMITHERY) {
       debug('Starting server automatically for Smithery integration...');
       // Start the server automatically when running under Smithery
-      const { spawn } = require('child_process');
-      const server = spawn('node', ['src/index.js'], {
-        stdio: 'pipe',
-        detached: true
-      });
-      
-      server.stderr.on('data', (data) => {
-        debug(`Server output: ${data}`);
-      });
-      
-      server.on('error', (err) => {
-        debug(`Failed to start server: ${err.message}`);
-      });
-      
-      // Wait a bit for the server to start
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      try {
+        const { spawn } = require('child_process');
+        console.error('[INFO] Attempting to start HTTP server in Smithery mode...');
+        
+        const server = spawn('node', ['src/index.js'], {
+          stdio: ['ignore', 'pipe', 'pipe'],
+          detached: false,
+          env: {
+            ...process.env,
+            SMITHERY: 'true'
+          }
+        });
+        
+        server.stdout.on('data', (data) => {
+          console.error(`[SERVER] ${data.toString().trim()}`);
+        });
+        
+        server.stderr.on('data', (data) => {
+          console.error(`[SERVER-ERR] ${data.toString().trim()}`);
+        });
+        
+        server.on('error', (err) => {
+          console.error(`[ERROR] Failed to start server: ${err.message}`);
+        });
+        
+        // Wait a bit for the server to start
+        console.error('[INFO] Waiting for server to start...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        
+        // Try to connect to the server again
+        retries = 2;
+        while (retries > 0) {
+          try {
+            const response = await fetch(`${url}`, { timeout: 5000 });
+            if (response.ok) {
+              console.error('[INFO] Server started successfully');
+              break;
+            }
+          } catch (error) {
+            console.error(`[ERROR] Server check failed: ${error.message}`);
+          }
+          retries--;
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      } catch (error) {
+        console.error(`[ERROR] Failed to start server: ${error.message}`);
+      }
     }
   }
 })(); 

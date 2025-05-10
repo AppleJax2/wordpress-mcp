@@ -50,6 +50,10 @@ startCommand:
         type: number
         description: Maximum number of browser connections
         default: 1
+      DEBUG_MCP:
+        type: boolean
+        description: Enable debug logging for the MCP wrapper
+        default: false
     required:
       - WP_SITE_URL
       - WP_USERNAME
@@ -64,22 +68,33 @@ startCommand:
         MAX_BROWSER_CONNECTIONS: "1",
         CONNECTION_TIMEOUT: "10000",
         SMITHERY: "true",
+        NODE_OPTIONS: "--max-old-space-size=512",
         WP_SITE_URL: config.WP_SITE_URL,
         WP_USERNAME: config.WP_USERNAME,
         WP_APP_PASSWORD: config.WP_APP_PASSWORD,
         NODE_ENV: config.NODE_ENV || "production",
         HEADLESS: config.HEADLESS ? "true" : "false",
-        SLOWMO: String(config.SLOWMO || 0)
+        SLOWMO: String(config.SLOWMO || 0),
+        DEBUG_MCP: config.DEBUG_MCP ? "true" : "false"
       }
     })
 
 # Resource requirements for the server
 resources:
-  memory: low
-  cpu: low
+  memory: medium # Changed from low to medium to ensure enough memory for Chromium
+  cpu: medium # Changed from low to medium to avoid timeout issues
 
 # Tool categories for organization
 toolCategories:
   - name: WordPress Management
     description: Tools for managing and automating WordPress sites
     tools: ["*"]
+
+# Health check configuration to ensure the service is running properly
+healthCheck:
+  type: http
+  path: /
+  interval: 30
+  timeout: 10
+  retries: 3
+  startPeriod: 30
