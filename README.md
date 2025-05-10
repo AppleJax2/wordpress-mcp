@@ -57,117 +57,13 @@ A specialized Model Context Protocol (MCP) server for WordPress and Divi theme b
 - **wordpress_authenticated_user_analyzer**: Analyze user behavior patterns
 - **wordpress_form_analysis**: Create and optimize forms
 
-## Setup
+## Usage Guide
 
-### Prerequisites
-- Node.js 18 or higher
-- Access to a WordPress site with the Divi theme installed
-- WordPress application password for authentication
-
-### Configuration
-Set the following environment variables:
-
-```
-WP_SITE_URL=https://your-wordpress-site.com
-WP_USERNAME=your-admin-username
-WP_APP_PASSWORD=your-app-password
-```
-
-### Installation
-
-```bash
-# Clone this repository
-git clone https://github.com/yourusername/wordpress-mcp.git
-
-# Install dependencies
-cd wordpress-mcp
-npm install
-
-# Start the server
-npm start
-```
-
-## Smithery Deployment
-
-This MCP server is designed to be deployed to [Smithery.ai](https://smithery.ai), a platform for hosting and managing MCP servers.
-
-### Steps to deploy to Smithery:
-
-1. Fork this repository
-2. Create a Smithery account at [https://smithery.ai](https://smithery.ai)
-3. Install the Smithery CLI:
-   ```bash
-   npm install -g @smithery/cli
-   ```
-4. Login to Smithery:
-   ```bash
-   npx @smithery/cli login --client cursor
-   ```
-5. Publish your MCP server:
-   ```bash
-   cd wordpress-mcp
-   npm run publish:smithery
-   ```
-6. Configure your WordPress credentials in the Smithery dashboard
-7. Connect to your MCP server:
-   ```bash
-   npx @smithery/cli run ididi/wordpress-mcp
-   ```
-
-## Development
-
-```bash
-# Run in development mode
-npm run dev
-
-# Build for production
-npm run build
-
-# Test
-npm test
-```
-
-## Deployment on Render.com
-
-This server can be deployed on Render.com using the provided `render.yaml` configuration:
-
-1. Fork this repository
-2. Sign up for a Render account at [https://render.com](https://render.com)
-3. Connect your GitHub account
-4. Create a new Web Service from your forked repository
-5. Add the following environment secrets:
-   - `WP_SITE_URL` - Your WordPress site URL
-   - `WP_USERNAME` - Your WordPress admin username
-   - `WP_APP_PASSWORD` - Your WordPress application password
-
-Once deployed, your server will be available at `https://wordpress-mcp.onrender.com` or a similar URL provided by Render.
-
-## Connect Cursor to Remote Server
-
-To connect Cursor to your remote Render-hosted MCP server, update your Cursor MCP configuration:
-
-```json
-{
-  "mcpServers": {
-    "wordpress-mcp-remote": {
-      "command": "npx",
-      "args": [
-        "@smithery/cli@latest",
-        "connect",
-        "http",
-        "--url",
-        "https://wordpress-mcp.onrender.com/mcp"
-      ]
-    }
-  }
-}
-```
-
-Replace `https://wordpress-mcp.onrender.com` with your actual Render.com URL.
+Our WordPress MCP server provides a powerful set of tools that can be utilized through AI agents. When integrated with models like Claude or GPT, these tools enable your AI assistant to perform complex WordPress site management and design tasks based on simple natural language requests.
 
 ## Example User Journeys
 
-Below are example user journeys demonstrating how this MCP server can automate WordPress and Divi website development through AI agent interactions.
+Below are example user journeys demonstrating how our WordPress MCP server can automate website development through AI agent interactions.
 
 ### 1. Business Website Creation with Divi
 
@@ -384,6 +280,10 @@ AI Agent: "Your lead generation forms are complete and optimized. I've created t
 ```
 
 **Value Delivered:** Professional lead generation system with strategic form placement, conversion tracking, and continuous improvement through A/B testing, driving more business opportunities.
+
+## Accessing Our WordPress MCP Tools
+
+Interested in using our WordPress and Divi automation tools? Contact us for information about accessing our MCP server and integrating it with your AI agents and workflows.
 
 ## License
 
