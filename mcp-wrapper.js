@@ -87,39 +87,39 @@ const minimalToolsList = [
 ];
 
 // Immediately return a tools notification to signal readiness
-debug('Sending initial tools notification');
-const startupNotification = {
-  jsonrpc: "2.0",
-  id: "1",
-  result: {
-    protocolVersion: "2023-07-01",
-    serverInfo: {
-      name: "WordPress MCP Server",
-      version: "1.0.0",
-      description: "MCP server for WordPress automation and management"
-    },
-    capabilities: {
-      tools: {}
-    }
-  }
-};
+// debug('Sending initial tools notification');
+// const startupNotification = {
+//   jsonrpc: "2.0",
+//   id: "1",
+//   result": {
+//     protocolVersion: "2023-07-01",
+//     serverInfo: {
+//       name: "WordPress MCP Server",
+//       version: "1.0.0",
+//       description: "MCP server for WordPress automation and management"
+//     },
+//     capabilities: {
+//       tools: {}
+//     }
+//   }
+// };
 
 // Print immediately so Cursor has something to initialize with
-console.log(JSON.stringify(startupNotification));
+// console.log(JSON.stringify(startupNotification));
 
 // Send minimal tool list immediately if in Smithery mode to prevent scanning timeouts
-if (IS_SMITHERY) {
-  debug('Sending immediate minimal tools list for Smithery');
-  const quickToolsNotification = {
-    jsonrpc: "2.0",
-    method: "tools/refresh",
-    params: {
-      tools: minimalToolsList
-    }
-  };
+// if (IS_SMITHERY) {
+//   debug('Sending immediate minimal tools list for Smithery');
+//   const quickToolsNotification = {
+//     jsonrpc: "2.0",
+//     method: "tools/refresh",
+//     params: {
+//       tools: minimalToolsList
+//     }
+//   };
   
-  console.log(JSON.stringify(quickToolsNotification));
-}
+//   console.log(JSON.stringify(quickToolsNotification));
+// }
 
 // Retry configuration with exponential backoff
 const MAX_RETRIES = 5;
