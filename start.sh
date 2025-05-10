@@ -14,19 +14,35 @@ if [ -z "$WP_SITE_URL" ]; then
   export WP_SITE_URL="https://visitingvet.com"
 fi
 
+# For Smithery deployments, ensure compatibility mode is active
+if [ "$SMITHERY" = "true" ]; then
+  echo "Enabling Smithery compatibility mode for faster scanning"
+  export SMITHERY="true"
+  export CONNECTION_TIMEOUT=5000
+  export CLEANUP_INTERVAL_MS=60000
+  export MAX_API_CONNECTIONS=1
+  export MAX_BROWSER_CONNECTIONS=1
+fi
+
 # Start the HTTP server in the background
 echo "Starting HTTP server on port $PORT..."
 node src/index.js &
 HTTP_SERVER_PID=$!
 
 # Check if server started successfully
-sleep 3
+sleep 2
 if ! kill -0 $HTTP_SERVER_PID 2>/dev/null; then
   echo "ERROR: HTTP server failed to start. Check logs for details."
   exit 1
 fi
 
 echo "HTTP server started with PID $HTTP_SERVER_PID"
+
+# Send immediate response for Smithery tool scanning
+if [ "$SMITHERY" = "true" ]; then
+  echo "Generating immediate response for Smithery scanning..."
+  # We'll let mcp-wrapper.js handle the immediate response
+fi
 
 # Start the MCP wrapper in the foreground
 echo "Starting MCP wrapper..."

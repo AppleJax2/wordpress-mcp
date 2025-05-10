@@ -14,6 +14,7 @@ MCP server for WordPress automation and management. This server provides a stand
 
 ### Latest Updates
 
+- **Enhanced Smithery compatibility mode**: Implemented ultra-fast tool scanning to prevent timeouts during Smithery deployment. The server now provides immediate responses in Smithery mode to avoid the scanning timeout issue.
 - **Lazy loading of tool configurations**: Implemented lazy loading of tool metadata to prevent timeouts during initialization. This makes the server more compatible with Smithery and other deployment platforms.
 
 ## Setup
@@ -44,11 +45,22 @@ docker run -p 3001:3001 --env-file .env wordpress-mcp-server
 
 ## Smithery Deployment
 
-This project is compatible with Smithery deployment. The server implements lazy loading of tool metadata to prevent timeout issues during scanning.
+This project is designed for compatibility with Smithery deployment. The server implements:
+
+1. **Ultra-fast scanning mode**: When deployed via Smithery, the server provides an immediate minimal set of tools to prevent scan timeouts.
+2. **Lazy loading**: Full tool schemas are only loaded when needed, reducing initialization time.
+3. **Resource conservation**: Connection pools and browser instances are optimized for Smithery's containerized environment.
+
+To enable Smithery compatibility mode manually, set the environment variable:
+```
+SMITHERY=true
+```
 
 ## Connection Management
 
 The server implements connection pooling for both API and browser connections. This helps prevent resource exhaustion and "max client connections" errors.
+
+In Smithery mode, connection limits are automatically reduced to ensure compatibility with the platform's resource constraints.
 
 ## Tool Development
 

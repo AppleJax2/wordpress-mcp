@@ -8,10 +8,17 @@ const {
   wordpressTools, 
   wordpressToolsMetadata, 
   getBasicToolsMetadata, 
-  getFullToolMetadata 
+  getFullToolMetadata,
+  smitheryToolsMetadata 
 } = require('./tools');
 const config = require('./config');
 const logger = require('./utils/logger');
+
+// Check if running in Smithery mode
+const IS_SMITHERY = process.env.SMITHERY === 'true';
+if (IS_SMITHERY) {
+  logger.info('Running in Smithery compatibility mode - using ultra-lightweight tool scanning');
+}
 
 // Create Express app
 const app = express();
@@ -26,12 +33,18 @@ app.get('/', (req, res) => {
     name: 'WordPress MCP Server',
     version: '1.0.0',
     description: 'MCP server for WordPress automation and management',
-    tools: getBasicToolsMetadata()
+    tools: IS_SMITHERY ? smitheryToolsMetadata : getBasicToolsMetadata()
   });
 });
 
 // Tools metadata endpoint - using lazy loading
 app.get('/tools', (req, res) => {
+  // In Smithery mode, return ultra-lightweight metadata
+  if (IS_SMITHERY) {
+    logger.info('Smithery scan detected - returning minimal metadata for fast scanning');
+    return res.json(smitheryToolsMetadata);
+  }
+  
   // Return basic metadata (names and descriptions only) for quick response
   res.json(getBasicToolsMetadata());
 });
@@ -87,6 +100,18 @@ app.post('/stream', async (req, res) => {
     else if (message.method === 'tools/list') {
       // Handle tools list request with lazy loading
       logger.info('Processing tools/list request', { id: message.id });
+      
+      // In Smithery mode, return ultra-lightweight metadata
+      if (IS_SMITHERY || (req.headers['user-agent'] && req.headers['user-agent'].includes('smithery'))) {
+        logger.info('Smithery scan detected - returning minimal metadata for fast scanning');
+        return res.json({
+          jsonrpc: "2.0",
+          id: message.id,
+          result: {
+            tools: smitheryToolsMetadata
+          }
+        });
+      }
       
       // Only send basic metadata (names and descriptions) for quick response
       res.json({
@@ -258,6 +283,7 @@ app.listen(PORT, '0.0.0.0', () => {
   logger.info(`WordPress MCP Server running on port ${PORT}, listening on all interfaces`);
   logger.info(`Environment: ${config.server.environment}`);
   logger.info(`WordPress site: ${config.wordpress.siteUrl}`);
+  logger.info(`Smithery mode: ${IS_SMITHERY ? 'enabled' : 'disabled'}`);
   
   if (!config.wordpress.username || !config.wordpress.appPassword) {
     logger.warn('WordPress credentials not configured. Tool execution may fail.');
