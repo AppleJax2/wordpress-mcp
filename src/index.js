@@ -33,7 +33,9 @@ app.get('/', (req, res) => {
     name: 'WordPress MCP Server',
     version: '1.0.0',
     description: 'MCP server for WordPress automation and management',
-    tools: IS_SMITHERY ? smitheryToolsMetadata : getBasicToolsMetadata()
+    tools: IS_SMITHERY ? smitheryToolsMetadata : getBasicToolsMetadata(),
+    isPartial: true,
+    supportsLazyLoading: true
   });
 });
 
@@ -42,11 +44,19 @@ app.get('/tools', (req, res) => {
   // In Smithery mode, return ultra-lightweight metadata
   if (IS_SMITHERY) {
     logger.info('Smithery scan detected - returning minimal metadata for fast scanning');
-    return res.json(smitheryToolsMetadata);
+    return res.json({
+      tools: smitheryToolsMetadata,
+      isPartial: true, 
+      supportsLazyLoading: true
+    });
   }
   
   // Return basic metadata (names and descriptions only) for quick response
-  res.json(getBasicToolsMetadata());
+  res.json({
+    tools: getBasicToolsMetadata(),
+    isPartial: true,
+    supportsLazyLoading: true
+  });
 });
 
 // REVISED MCP Protocol Implementation
@@ -108,7 +118,9 @@ app.post('/stream', async (req, res) => {
           jsonrpc: "2.0",
           id: message.id,
           result: {
-            tools: smitheryToolsMetadata
+            tools: smitheryToolsMetadata,
+            isPartial: true,
+            supportsLazyLoading: true
           }
         });
       }
@@ -118,7 +130,9 @@ app.post('/stream', async (req, res) => {
         jsonrpc: "2.0",
         id: message.id,
         result: {
-          tools: getBasicToolsMetadata()
+          tools: getBasicToolsMetadata(),
+          isPartial: true,
+          supportsLazyLoading: true
         }
       });
       
