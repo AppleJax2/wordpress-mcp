@@ -10,6 +10,15 @@
 const readline = require('readline');
 const fetch = require('node-fetch');
 
+// Debug mode - controlled by environment variable
+const DEBUG = process.env.DEBUG_MCP === 'true';
+
+function debug(...args) {
+  if (DEBUG) {
+    console.error('[DEBUG]', ...args);
+  }
+}
+
 // Determine the correct URL based on environment
 let baseUrl = 'http://localhost:3001';
 if (process.env.RENDER) {
@@ -37,15 +46,6 @@ const httpsAgent = new https.Agent({
   keepAliveMsecs: 3000,
   timeout: 10000
 });
-
-// Debug mode - controlled by environment variable
-const DEBUG = process.env.DEBUG_MCP === 'true';
-
-function debug(...args) {
-  if (DEBUG) {
-    console.error('[DEBUG]', ...args);
-  }
-}
 
 // Check for Smithery environment
 const IS_SMITHERY = process.env.SMITHERY === 'true';
