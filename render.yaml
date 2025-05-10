@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: wordpress-mcp
+    env: docker
+    plan: starter
+    autoDeploy: true
+    dockerfilePath: Dockerfile.smithery
+    envVars:
+      - key: WP_SITE_URL
+        fromSecret: WP_SITE_URL
+      - key: WP_USERNAME
+        fromSecret: WP_USERNAME
+      - key: WP_APP_PASSWORD
+        fromSecret: WP_APP_PASSWORD
+      - key: NODE_ENV
+        value: production
+      - key: HEADLESS
+        value: "true"
+      - key: SLOWMO
+        value: "0"
+      - key: MAX_API_CONNECTIONS
+        value: "1"
+      - key: MAX_BROWSER_CONNECTIONS
+        value: "1"
+      - key: SMITHERY
+        value: "true"
+      - key: MCP_PROTOCOL_VERSION
+        value: "2023-07-01"
+      - key: DEBUG_MCP
+        value: "true"
+      - key: PORT
+        value: "3001"
+      - key: CONNECTION_TIMEOUT
+        value: "5000"
+      - key: CLEANUP_INTERVAL_MS
+        value: "60000" 
