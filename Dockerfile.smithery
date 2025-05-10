@@ -39,21 +39,39 @@ RUN mkdir -p /app/logs && chmod 777 /app/logs
 # Make the startup script executable
 RUN chmod +x start.sh
 
+# Create a special script for Smithery
+RUN echo '#!/bin/sh\n\
+echo "Starting WordPress MCP Server in Smithery mode..."\n\
+export NODE_ENV=production\n\
+export HEADLESS=true\n\
+export SLOWMO=0\n\
+export PORT=3001\n\
+export MAX_API_CONNECTIONS=1\n\
+export MAX_BROWSER_CONNECTIONS=1\n\
+export SMITHERY=true\n\
+export CONNECTION_TIMEOUT=5000\n\
+export CLEANUP_INTERVAL_MS=60000\n\
+export MCP_PROTOCOL_VERSION=2023-07-01\n\
+export DEBUG_MCP=true\n\
+\n\
+echo "Protocol version: $MCP_PROTOCOL_VERSION"\n\
+echo "Starting MCP wrapper directly..."\n\
+node mcp-wrapper.js\n' > smithery-start.sh
+
+RUN chmod +x smithery-start.sh
+
 # Set environment variables
 ENV NODE_ENV=production \
     HEADLESS=true \
     SLOWMO=0 \
     PORT=3001 \
-    MAX_API_CONNECTIONS=3 \
+    MAX_API_CONNECTIONS=1 \
     MAX_BROWSER_CONNECTIONS=1 \
     SMITHERY=true \
-    CONNECTION_TIMEOUT=10000 \
+    CONNECTION_TIMEOUT=5000 \
+    CLEANUP_INTERVAL_MS=60000 \
     MCP_PROTOCOL_VERSION=2023-07-01 \
     DEBUG_MCP=true
-
-# Set healthcheck to ensure container is running properly
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD wget -q --spider http://localhost:3001 || exit 1
 
 # Expose port
 EXPOSE 3001
@@ -61,5 +79,5 @@ EXPOSE 3001
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Command will be provided by smithery.yaml
-CMD ["./start.sh"]
+# Run the Smithery-specific script
+CMD ["./smithery-start.sh"] 

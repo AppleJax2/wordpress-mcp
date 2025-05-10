@@ -80,6 +80,9 @@ startCommand:
       }
     })
 
+# Use custom Dockerfile for Smithery deployment
+dockerfile: Dockerfile.smithery
+
 # Resource requirements for the server
 resources:
   memory: medium # Changed from low to medium to ensure enough memory for Chromium
