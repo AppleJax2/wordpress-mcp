@@ -1,8 +1,21 @@
 #!/bin/sh
-# Startup script for WordPress MCP Server
+# Startup script for WordPress and Divi Theme Builder MCP Server
 
 echo "Starting WordPress MCP Server..."
 echo "Environment: NODE_ENV=$NODE_ENV"
+
+# Check for override file and use it
+if [ -f "/app/.env.override" ]; then
+  echo "Found .env.override file, loading overrides..."
+  # Read each line and export the variables
+  while IFS= read -r line || [ -n "$line" ]; do
+    if [ -n "$line" ] && [ "${line:0:1}" != "#" ]; then
+      export "$line"
+      echo "Override: $line"
+    fi
+  done < "/app/.env.override"
+fi
+
 echo "Running with SMITHERY=$SMITHERY"
 
 # Ensure we're in the correct directory
@@ -49,7 +62,7 @@ fi
 
 # Start the MCP wrapper in the foreground
 echo "Starting MCP wrapper..."
-SMITHERY=true node mcp-wrapper.js
+node mcp-wrapper.js
 
 # Capture exit code of MCP wrapper
 MCP_EXIT_CODE=$?

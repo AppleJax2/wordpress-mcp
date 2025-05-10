@@ -62,6 +62,159 @@ app.get('/tools', (req, res) => {
   });
 });
 
+// Add Smithery MCP endpoint to handle protocol requests
+// This fixes the 404 error in Smithery deployment
+app.post('/mcp', async (req, res) => {
+  const message = req.body;
+  logger.info('Received POST request to /mcp', { messageId: message?.id, method: message?.method });
+  
+  try {
+    // Handle initialize request
+    if (message.method === 'initialize') {
+      logger.info('Processing initialize request', { id: message.id });
+      
+      return res.json({
+        jsonrpc: "2.0",
+        id: message.id,
+        result: {
+          protocolVersion: "2023-07-01",
+          serverInfo: {
+            name: "WordPress MCP Server",
+            version: "1.0.0",
+            description: "MCP server for WordPress automation and management"
+          },
+          capabilities: {
+            tools: {
+              supportsLazyLoading: true
+            }
+          }
+        }
+      });
+    } 
+    // Handle tools/list request
+    else if (message.method === 'tools/list') {
+      logger.info('Processing tools/list request from Smithery', { id: message.id });
+      
+      // Always send lightweight metadata for Smithery
+      return res.json({
+        jsonrpc: "2.0",
+        id: message.id,
+        result: {
+          tools: smitheryToolsMetadata,
+          isPartial: false, // Set to false for Smithery compatibility
+          supportsLazyLoading: false // Set to false for Smithery compatibility
+        }
+      });
+    }
+    // Handle tool schema requests
+    else if (message.method === 'tools/getSchema') {
+      logger.info('Processing tools/getSchema request', { id: message.id, tool: message.params?.name });
+      
+      if (!message.params?.name) {
+        return res.status(400).json({
+          jsonrpc: "2.0",
+          id: message.id,
+          error: {
+            code: -32602,
+            message: "Invalid params: tool name required"
+          }
+        });
+      }
+      
+      const toolSchema = getFullToolMetadata(message.params.name);
+      
+      if (!toolSchema) {
+        return res.status(404).json({
+          jsonrpc: "2.0",
+          id: message.id,
+          error: {
+            code: -32601,
+            message: `Tool '${message.params.name}' not found`
+          }
+        });
+      }
+      
+      return res.json({
+        jsonrpc: "2.0",
+        id: message.id,
+        result: {
+          schema: toolSchema
+        }
+      });
+    }
+    // Handle tool call requests
+    else if (message.method === 'callTool') {
+      const { name, parameters } = message.params;
+      logger.info('Processing callTool request via /mcp', { id: message.id, tool: name });
+      
+      const tool = wordpressTools[name];
+      if (!tool) {
+        logger.error(`Tool not found: ${name}`);
+        return res.status(404).json({
+          jsonrpc: "2.0",
+          id: message.id,
+          error: {
+            code: -32601,
+            message: `Tool '${name}' not found`
+          }
+        });
+      }
+      
+      try {
+        // Execute the tool with the provided parameters
+        const result = await tool.execute(parameters);
+        
+        logger.info(`Tool execution complete: ${name}`, { success: result.success, id: message.id });
+        
+        // Send the response
+        return res.json({
+          jsonrpc: "2.0",
+          id: message.id,
+          result: {
+            result: result
+          }
+        });
+      } catch (error) {
+        logger.error(`Error executing tool ${name}:`, { error: error.message, id: message.id });
+        
+        return res.status(500).json({
+          jsonrpc: "2.0",
+          id: message.id,
+          error: {
+            code: -32000,
+            message: error.message,
+            data: process.env.NODE_ENV === 'development' ? error.stack : undefined
+          }
+        });
+      }
+    } else {
+      // Handle unsupported methods
+      logger.warn(`Unsupported method: ${message.method}`, { id: message.id });
+      
+      return res.status(400).json({
+        jsonrpc: "2.0",
+        id: message.id,
+        error: {
+          code: -32601,
+          message: `Method '${message.method}' not supported`
+        }
+      });
+    }
+  } catch (error) {
+    logger.error('Error processing /mcp request', { error: error.message, stack: error.stack });
+    
+    return res.status(500).json({
+      jsonrpc: "2.0",
+      id: message?.id || null,
+      error: {
+        code: -32603,
+        message: "Internal server error",
+        data: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      }
+    });
+  }
+});
+
 // REVISED MCP Protocol Implementation
 // GET endpoint for establishing SSE connection
 app.get('/stream', (req, res) => {

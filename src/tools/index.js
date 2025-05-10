@@ -1,57 +1,29 @@
 /**
- * WordPress MCP Tools Registry
+ * WordPress MCP Tools Registry - Focused on WordPress and Divi
  */
 const SiteInfoTool = require('./site-info-tool');
 const CreatePageTool = require('./create-page-tool');
-const GeoDirectoryTool = require('./geodirectory-tool');
-const ThemeCustomizerTool = require('./theme-customizer-tool');
 const ThemeManagerTool = require('./theme-manager-tool');
 const AuthManagerTool = require('./auth-manager-tool');
 const MediaManagerTool = require('./media-manager-tool');
 const ContentManagerTool = require('./content-manager-tool');
-const PluginManagerTool = require('./plugin-manager-tool');
 const MenuManagerTool = require('./menu-manager-tool');
-const WooCommerceManagerTool = require('./woocommerce-manager-tool');
 const DiviBuilderTool = require('./divi-builder-tool');
 const WidgetManagerTool = require('./widget-manager-tool');
-const UserManagerTool = require('./user-manager-tool');
-const SEOManagerTool = require('./seo-manager-tool');
-const SettingsManagerTool = require('./settings-manager-tool');
-const SiteMapperTool = require('./sitemap-tool');
-const DesignAnalyzerTool = require('./design-analyzer-tool');
-const SitePolisherTool = require('./site-polisher-tool');
-const ContentAuditTool = require('./content-audit-tool');
-const AuthenticatedUserAnalyzerTool = require('./authenticated-user-analyzer-tool');
-const UserJourneyMapperTool = require('./user-journey-mapper-tool');
-const FormAnalysisTool = require('./form-analysis-tool');
-const NavigationOptimizerTool = require('./navigation-optimizer-tool');
+const ThemeCustomizerTool = require('./theme-customizer-tool');
 
 // Tool classes for lazy initialization
 const ToolClasses = {
   SiteInfoTool,
   CreatePageTool,
-  GeoDirectoryTool,
-  ThemeCustomizerTool,
   ThemeManagerTool,
   AuthManagerTool,
   MediaManagerTool,
-  ContentManagerTool,
-  PluginManagerTool, 
+  ContentManagerTool, 
   MenuManagerTool,
-  WooCommerceManagerTool,
   DiviBuilderTool,
   WidgetManagerTool,
-  UserManagerTool,
-  SEOManagerTool,
-  SettingsManagerTool,
-  SiteMapperTool,
-  DesignAnalyzerTool,
-  SitePolisherTool,
-  ContentAuditTool,
-  AuthenticatedUserAnalyzerTool,
-  UserJourneyMapperTool,
-  FormAnalysisTool,
-  NavigationOptimizerTool
+  ThemeCustomizerTool
 };
 
 // Store tool instances

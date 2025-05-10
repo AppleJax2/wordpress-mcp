@@ -1,70 +1,86 @@
-# WordPress MCP Server
+# WordPress and Divi Theme Builder MCP Server
 
-MCP server for WordPress automation and management. This server provides a standardized interface for AI assistants to manage WordPress sites through a collection of specialized tools.
+A specialized Model Context Protocol (MCP) server for WordPress and Divi theme builder automation. This server provides tools for AI agents to create, manage, and customize WordPress websites with a focus on the Divi theme builder.
 
 ## Features
 
-- Standardized interface following the MCP protocol
-- WordPress site integration
-- Headless browser automation
-- Connection pooling to prevent resource exhaustion
-- Docker ready for production deployment
+- WordPress site management tools
+- Divi theme builder integration
+- Page creation and content management
+- Theme customization and management
+- Media management
+- Menu and widget configuration
+- Authentication and user management
 
-## Updates
+## Tools Available
 
-### Latest Updates
+### WordPress Core
+- **wordpress_site_info**: Get information about the WordPress site
+- **wordpress_create_page**: Create pages in WordPress
+- **wordpress_auth_manager**: Handle WordPress authentication
+- **wordpress_content_manager**: Manage WordPress content
 
-- **Enhanced Smithery compatibility mode**: Implemented ultra-fast tool scanning to prevent timeouts during Smithery deployment. The server now provides immediate responses in Smithery mode to avoid the scanning timeout issue.
-- **Lazy loading of tool configurations**: Implemented lazy loading of tool metadata to prevent timeouts during initialization. This makes the server more compatible with Smithery and other deployment platforms.
+### Divi Builder
+- **wordpress_divi_builder**: Advanced page building with the Divi framework
+- **wordpress_theme_customizer**: Customize WordPress themes
+- **wordpress_theme_manager**: Manage WordPress themes
+
+### Site Structure
+- **wordpress_menu_manager**: Manage WordPress menus
+- **wordpress_widget_manager**: Manage WordPress widgets
+- **wordpress_media_manager**: Manage WordPress media library
 
 ## Setup
 
-### Environment Variables
+### Prerequisites
+- Node.js 18 or higher
+- Access to a WordPress site with the Divi theme installed
+- WordPress application password for authentication
 
-Copy `.env.example` to `.env` and update with your WordPress site details:
+### Configuration
+Set the following environment variables:
 
 ```
-WP_SITE_URL=https://example.com
-WP_USERNAME=admin
-WP_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx
+WP_SITE_URL=https://your-wordpress-site.com
+WP_USERNAME=your-admin-username
+WP_APP_PASSWORD=your-app-password
 ```
 
-### Running Locally
+### Installation
 
 ```bash
+# Clone this repository
+git clone https://github.com/yourusername/wordpress-mcp.git
+
+# Install dependencies
+cd wordpress-mcp
 npm install
+
+# Start the server
 npm start
-```
-
-### Docker Deployment
-
-```bash
-docker build -t wordpress-mcp-server .
-docker run -p 3001:3001 --env-file .env wordpress-mcp-server
 ```
 
 ## Smithery Deployment
 
-This project is designed for compatibility with Smithery deployment. The server implements:
+This MCP server is designed to be deployed to Smithery.ai. To deploy to Smithery:
 
-1. **Ultra-fast scanning mode**: When deployed via Smithery, the server provides an immediate minimal set of tools to prevent scan timeouts.
-2. **Lazy loading**: Full tool schemas are only loaded when needed, reducing initialization time.
-3. **Resource conservation**: Connection pools and browser instances are optimized for Smithery's containerized environment.
+1. Fork this repository
+2. Connect your repository to Smithery
+3. Configure the required WordPress credentials
+4. Deploy
 
-To enable Smithery compatibility mode manually, set the environment variable:
+## Development
+
+```bash
+# Run in development mode
+npm run dev
+
+# Build for production
+npm run build
+
+# Test
+npm test
 ```
-SMITHERY=true
-```
-
-## Connection Management
-
-The server implements connection pooling for both API and browser connections. This helps prevent resource exhaustion and "max client connections" errors.
-
-In Smithery mode, connection limits are automatically reduced to ensure compatibility with the platform's resource constraints.
-
-## Tool Development
-
-To add a new tool, create a new file in the `src/tools` directory following the existing patterns. The tool will be automatically registered.
 
 ## License
 

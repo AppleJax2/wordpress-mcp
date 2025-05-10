@@ -1,6 +1,6 @@
 name: ididi/wordpress-mcp
 version: 1.0.0
-description: WordPress MCP Server for automation and management using browser automation and API integration
+description: WordPress and Divi Theme Builder MCP Server for website creation and management. Specializes in WordPress automation and Divi theme design.
 
 # Protocol to communicate with the server
 protocol: http # Use HTTP transport for remote scanning
@@ -90,9 +90,15 @@ resources:
 
 # Tool categories for organization
 toolCategories:
-  - name: WordPress Management
-    description: Tools for managing and automating WordPress sites
-    tools: ["*"]
+  - name: WordPress Core
+    description: Basic WordPress site management tools
+    tools: ["wordpress_site_info", "wordpress_create_page", "wordpress_auth_manager", "wordpress_content_manager"]
+  - name: Divi Builder
+    description: Tools for designing and building websites with Divi theme
+    tools: ["wordpress_divi_builder", "wordpress_theme_customizer", "wordpress_theme_manager"]
+  - name: Site Structure
+    description: Tools for managing WordPress site structure and navigation
+    tools: ["wordpress_menu_manager", "wordpress_widget_manager", "wordpress_media_manager"]
 
 # Health check configuration to ensure the service is running properly
 healthCheck:
