@@ -13,8 +13,9 @@ const fetch = require('node-fetch');
 // Determine the correct URL based on environment
 let baseUrl = 'http://localhost:3001';
 if (process.env.RENDER) {
-  // Use the Render service internal URL when running on Render.com
-  baseUrl = `http://localhost:${process.env.PORT || 3001}`;
+  // Use 127.0.0.1 for Render to avoid IPv6 resolution issues with localhost
+  baseUrl = `http://127.0.0.1:${process.env.PORT || 3001}`;
+  debug(`Running on Render.com, forcing baseUrl to: ${baseUrl}`);
 }
 const url = baseUrl;
 
