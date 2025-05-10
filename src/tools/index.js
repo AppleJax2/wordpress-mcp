@@ -59,46 +59,21 @@ let toolInstances = {};
 
 // Pre-computed minimal tool metadata for ultra-fast Smithery scanning
 // This avoids any initialization cost and is extremely lightweight
-const smitheryToolsMetadata = [
-  {
+const smitheryToolsMetadata = Object.keys(ToolClasses).map(className => {
+  const instance = new ToolClasses[className]();
+  return {
     type: "function",
     function: {
-      name: "wordpress_site_info",
-      description: "Get information about the WordPress site",
+      name: instance.name,
+      description: instance.description,
       parameters: {
         type: "object",
         properties: {},
         required: []
       }
     }
-  },
-  {
-    type: "function",
-    function: {
-      name: "wordpress_create_page",
-      description: "Create a new page in WordPress",
-      parameters: {
-        type: "object",
-        properties: {},
-        required: []
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "wordpress_theme_customizer",
-      description: "Customize WordPress theme settings",
-      parameters: {
-        type: "object",
-        properties: {},
-        required: []
-      }
-    }
-  }
-  // Only include 3 essential tools for ultra-fast Smithery scanning
-  // Full tool list will be available after initialization
-];
+  };
+});
 
 // Lazily get a tool instance
 function getToolInstance(toolClassName) {

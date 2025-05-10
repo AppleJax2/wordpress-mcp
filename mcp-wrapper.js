@@ -10,6 +10,8 @@
 const readline = require('readline');
 const fetch = require('node-fetch');
 const url = 'http://localhost:3001';
+const path = require('path');
+const { smitheryToolsMetadata } = require(path.join(__dirname, 'src', 'tools', 'index.js'));
 
 // Create an HTTP agent to enable connection reuse with better configuration
 const http = require('http');
@@ -47,44 +49,7 @@ console.error(`Node version: ${process.version}`);
 console.error(`Debug mode: ${DEBUG ? 'enabled' : 'disabled'}`);
 
 // Minimal tools list for ultra-fast Smithery response
-const minimalToolsList = [
-  {
-    type: "function",
-    function: {
-      name: "wordpress_site_info",
-      description: "Get information about the WordPress site",
-      parameters: {
-        type: "object",
-        properties: {},
-        required: []
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "wordpress_create_page",
-      description: "Create a new page in WordPress",
-      parameters: {
-        type: "object",
-        properties: {},
-        required: []
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "wordpress_theme_customizer",
-      description: "Customize WordPress theme settings",
-      parameters: {
-        type: "object",
-        properties: {},
-        required: []
-      }
-    }
-  }
-];
+const minimalToolsList = smitheryToolsMetadata;
 
 // Immediately return a tools notification to signal readiness
 // debug('Sending initial tools notification');
@@ -233,7 +198,7 @@ rl.on('line', async (line) => {
         jsonrpc: "2.0",
         id: request.id,
         result: {
-          protocolVersion: "1.0",
+          protocolVersion: "2023-07-01",
           serverInfo: {
             name: "WordPress MCP Server",
             version: "1.0.0",
