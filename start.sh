@@ -54,12 +54,25 @@ SMITHERY=true node mcp-wrapper.js
 # Capture exit code of MCP wrapper
 MCP_EXIT_CODE=$?
 
-# If the wrapper exits, kill the HTTP server too
-echo "MCP wrapper exited with code $MCP_EXIT_CODE, shutting down HTTP server..."
-kill $HTTP_SERVER_PID
+# If the wrapper exits, decide whether to kill the HTTP server
+if [ "$SMITHERY" = "true" ] && [ "$MCP_EXIT_CODE" -eq 0 ]; then
+  echo "MCP wrapper exited successfully in Smithery mode (code $MCP_EXIT_CODE). HTTP server (PID $HTTP_SERVER_PID) will continue running."
+  # Wait for the HTTP server process. This keeps the script (and container) alive.
+  # Render will send a SIGTERM to this script to stop the container, which will then propagate.
+  wait $HTTP_SERVER_PID
+  # Store the exit code of the wait command (which is the exit code of HTTP_SERVER_PID)
+  HTTP_SERVER_EXIT_CODE=$?
+  echo "HTTP server process ended with code $HTTP_SERVER_EXIT_CODE."
+  exit $HTTP_SERVER_EXIT_CODE
+else
+  echo "MCP wrapper exited with code $MCP_EXIT_CODE. Shutting down HTTP server (PID $HTTP_SERVER_PID)..."
+  kill $HTTP_SERVER_PID
+  wait $HTTP_SERVER_PID 2>/dev/null || true # Wait for it to actually stop
+  echo "WordPress MCP Server shutdown complete (wrapper initiated)."
+  exit $MCP_EXIT_CODE # Exit with the wrapper's error code if it wasn't a clean Smithery exit
+fi
 
-# Wait for HTTP server to terminate
-wait $HTTP_SERVER_PID 2>/dev/null || true
-
-echo "WordPress MCP Server shutdown complete."
-exit $MCP_EXIT_CODE
+# This part should ideally not be reached if the logic above is correct,
+# but keeping it as a fallback or for clarity that the script intends to exit based on prior conditions.
+# echo "WordPress MCP Server shutdown complete."
+# exit $MCP_EXIT_CODE
