@@ -5,7 +5,7 @@ description: WordPress MCP Server for automation and management using browser au
 # Protocol to communicate with the server
 protocol: stdio # This describes the MCP protocol for tools
 mcp:
-  protocolVersion: "2023-07-01"
+  protocolVersion: "1.0"
   maxConnections: 5
 
 # Command to start the server for Smithery Hosted Deployment

@@ -69,7 +69,7 @@
   ],
   "mcp": {
     "protocol": "stdio",
-    "protocolVersion": "2023-07-01",
+    "protocolVersion": "1.0",
     "max_connections": 5
   },
   "resources": {

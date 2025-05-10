@@ -233,7 +233,7 @@ rl.on('line', async (line) => {
         jsonrpc: "2.0",
         id: request.id,
         result: {
-          protocolVersion: "2023-07-01",
+          protocolVersion: "1.0",
           serverInfo: {
             name: "WordPress MCP Server",
             version: "1.0.0",
