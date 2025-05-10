@@ -76,20 +76,24 @@ if (IS_SMITHERY) {
   console.log(JSON.stringify(startupNotification));
 }
 
-// Send minimal tool list immediately if in Smithery mode to prevent scanning timeouts
+// Send a simplified static tool list immediately in Smithery mode
 if (IS_SMITHERY) {
-  debug('Sending immediate minimal tools list for Smithery');
+  debug('Sending static tools list for Smithery compatibility');
+  const simpleTools = [
+    {
+      type: "function",
+      function: {
+        name: "wordpress_site_info",
+        description: "Get information about the WordPress site",
+        parameters: { type: "object", properties: {}, required: [] }
+      }
+    }
+  ];
   const quickToolsNotification = {
     jsonrpc: "2.0",
     method: "tools/refresh",
-    params: {
-      tools: minimalToolsList,
-      isPartial: true,
-      supportsLazyLoading: true,
-      lazyLoadingEnabled: true
-    }
+    params: { tools: simpleTools, isPartial: false, supportsLazyLoading: false }
   };
-  
   console.log(JSON.stringify(quickToolsNotification));
 }
 

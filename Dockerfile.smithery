@@ -2,7 +2,7 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Install dependencies for Puppeteer in Alpine with correct packages
+# Install dependencies for Puppeteer in Alpine
 RUN apk update && apk add --no-cache \
     chromium \
     nss \
@@ -17,66 +17,42 @@ RUN apk update && apk add --no-cache \
     fontconfig \
     udev
 
-# Tell Puppeteer to use the installed Chromium and reduce resource usage
+# Puppeteer environment
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
     PUPPETEER_DISABLE_DEV_SHM_USAGE=true \
     CHROME_PATH=/usr/bin/chromium-browser \
     NODE_OPTIONS=--max-old-space-size=512
 
-# Copy package files
+# Copy and install dependencies
 COPY package*.json ./
-
-# Install dependencies with clean install to ensure deterministic builds
 RUN npm ci --only=production --no-audit
 
-# Copy application code
+# Copy source code
 COPY . .
 
-# Create log directory with permissions
-RUN mkdir -p /app/logs && chmod 777 /app/logs
-
-# Make the startup script executable
-RUN chmod +x start.sh
-
-# Create a special script for Smithery
+# Create a simple startup script for Smithery
 RUN echo '#!/bin/sh\n\
-echo "Starting WordPress MCP Server in Smithery mode..."\n\
-export NODE_ENV=production\n\
-export HEADLESS=true\n\
-export SLOWMO=0\n\
-export PORT=3001\n\
-export MAX_API_CONNECTIONS=1\n\
-export MAX_BROWSER_CONNECTIONS=1\n\
 export SMITHERY=true\n\
-export CONNECTION_TIMEOUT=5000\n\
-export CLEANUP_INTERVAL_MS=60000\n\
 export MCP_PROTOCOL_VERSION=2023-07-01\n\
 export DEBUG_MCP=true\n\
-\n\
-echo "Protocol version: $MCP_PROTOCOL_VERSION"\n\
-echo "Starting MCP wrapper directly..."\n\
+echo "Starting MCP wrapper in Smithery mode..."\n\
 node mcp-wrapper.js\n' > smithery-start.sh
-
 RUN chmod +x smithery-start.sh
 
-# Set environment variables
+# Environment variables
 ENV NODE_ENV=production \
     HEADLESS=true \
     SLOWMO=0 \
     PORT=3001 \
-    MAX_API_CONNECTIONS=1 \
-    MAX_BROWSER_CONNECTIONS=1 \
     SMITHERY=true \
-    CONNECTION_TIMEOUT=5000 \
-    CLEANUP_INTERVAL_MS=60000 \
     MCP_PROTOCOL_VERSION=2023-07-01 \
     DEBUG_MCP=true
 
 # Expose port
 EXPOSE 3001
 
-# Use dumb-init to handle signals properly
+# Use dumb-init to handle signals
 ENTRYPOINT ["dumb-init", "--"]
 
 # Run the Smithery-specific script
