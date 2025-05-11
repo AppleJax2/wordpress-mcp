@@ -9,6 +9,9 @@
 
 const readline = require('readline');
 const fetch = require('node-fetch');
+const path = require('path');
+const http = require('http');
+const https = require('https');
 
 // Debug mode - controlled by environment variable
 const DEBUG = process.env.DEBUG_MCP === 'true';
@@ -28,18 +31,16 @@ if (process.env.RENDER) {
 }
 const url = baseUrl;
 
-const path = require('path');
 const { smitheryToolsMetadata } = require(path.join(__dirname, 'src', 'tools', 'index.js'));
 
 // Create an HTTP agent to enable connection reuse with better configuration
-const http = require('http');
-const https = require('https');
 const httpAgent = new http.Agent({ 
   keepAlive: true, 
   maxSockets: 3,
   keepAliveMsecs: 3000,
   timeout: 10000
 });
+
 const httpsAgent = new https.Agent({ 
   keepAlive: true, 
   maxSockets: 3,
@@ -211,202 +212,140 @@ rl.on('line', async (line) => {
     if (request.method === 'initialize') {
       debug('Handling initialize request with protocol version 1.0');
       
-      // Send initialize response
-      const response = {
-        jsonrpc: "2.0",
-        id: request.id,
-        result: {
-          protocolVersion: "2023-07-01",
-          serverInfo: {
-            name: "WordPress MCP Server",
-            version: "1.0.0",
-            description: "MCP server for WordPress automation and management"
-          },
-          capabilities: {
-            tools: {
-              supportsLazyLoading: true
-            }
-          }
-        }
-      };
-      
-      // Send the response
-      console.log(JSON.stringify(response));
-      debug('Sent initialize response');
-      
-      // In Smithery mode, use the minimal tools list with lazy loading
-      if (IS_SMITHERY) {
-        const notification = {
-          jsonrpc: "2.0",
-          method: "tools/refresh",
-          params: {
-            tools: minimalToolsList,
-            isPartial: true,
-            supportsLazyLoading: true,
-            lazyLoadingEnabled: true
-          }
-        };
-        
-        console.log(JSON.stringify(notification));
-        debug('Sent minimal tools notification for Smithery with lazy loading support');
-        return;
-      }
-      
-      // Fetch basic tool metadata (names and descriptions only) from the HTTP server with retries
+      // Fetch server info and capabilities
       try {
-        debug('Fetching tool metadata...');
-        const toolsResponse = await fetchWithRetry(`${url}/tools`);
-        const tools = await toolsResponse.json();
-        debug(`Fetched basic metadata for ${tools.length} tools`);
-        
-        // Send tools notification with basic metadata and lazy loading support
-        const notification = {
-          jsonrpc: "2.0",
-          method: "tools/refresh",
-          params: {
-            tools: tools || [],
-            isPartial: true,
-            supportsLazyLoading: true,
-            lazyLoadingEnabled: true
-          }
-        };
-        
-        console.log(JSON.stringify(notification));
-        debug('Sent tools notification with basic metadata and lazy loading support');
-      } catch (error) {
-        debug(`Error fetching tool metadata: ${error.message}`);
-        console.error(`[ERROR] Could not fetch tool metadata: ${error.message}`);
-        
-        // If fetch fails, still send a minimal tools list in Smithery mode with lazy loading
-        if (IS_SMITHERY) {
-          const fallbackNotification = {
-            jsonrpc: "2.0",
-            method: "tools/refresh",
-            params: {
-              tools: minimalToolsList,
-              isPartial: true,
-              supportsLazyLoading: true,
-              lazyLoadingEnabled: true
-            }
-          };
-          
-          console.log(JSON.stringify(fallbackNotification));
-          debug('Sent fallback minimal tools notification for Smithery with lazy loading support');
-        }
-      }
-    } 
-    else if (request.method === 'callTool') {
-      debug(`Handling callTool request for tool: ${request.params?.name}`);
-      
-      // Check if we need to fetch tool schema first
-      const toolName = request.params?.name;
-      
-      // Only fetch the schema if we don't have it cached
-      if (toolName && !toolSchemaCache.has(toolName)) {
-        try {
-          debug(`Fetching schema for tool: ${toolName}`);
-          
-          // Make a request to get the tool schema
-          const schemaResponse = await fetchWithRetry(`${url}/stream`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              jsonrpc: "2.0",
-              id: `schema-${Date.now()}`,
-              method: "tools/getSchema",
-              params: {
-                name: toolName
-              }
-            })
-          });
-          
-          const schemaResult = await schemaResponse.json();
-          
-          if (schemaResult.result?.schema) {
-            debug(`Received schema for tool: ${toolName}`);
-            toolSchemaCache.set(toolName, schemaResult.result.schema);
-          }
-        } catch (error) {
-          debug(`Error fetching tool schema: ${error.message}`);
-          // Continue with the tool call even if schema fetch fails
-        }
-      }
-      
-      // Forward to the HTTP server
-      try {
-        const { name, parameters } = request.params;
-        
-        // Make the tool call
-        const toolResponse = await fetchWithRetry(`${url}/tools/${name}`, {
-          method: 'POST',
+        const sseRes = await fetchWithRetry(`${url}/sse-cursor`, {
+          method: 'GET',
           headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(parameters)
+            'Accept': 'text/event-stream',
+            'Authorization': `Bearer ${process.env.API_KEY || ''}`
+          }
         });
         
-        const result = await toolResponse.json();
-        debug(`Got tool result:`, result);
+        debug('SSE connection established');
         
-        // Send the response
-        const response = {
+        // Process SSE stream
+        let sessionId = null;
+        const reader = sseRes.body.getReader();
+        const decoder = new TextDecoder();
+        
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value);
+          debug('SSE chunk:', chunk);
+          
+          // Parse SSE events
+          const events = chunk.split('\n\n');
+          for (const event of events) {
+            if (!event.trim()) continue;
+            
+            const lines = event.split('\n');
+            const eventType = lines.find(line => line.startsWith('event:'))?.substring(7)?.trim();
+            const data = lines.find(line => line.startsWith('data:'))?.substring(5)?.trim();
+            
+            if (eventType === 'endpoint' && data) {
+              const endpoint = data;
+              sessionId = endpoint.match(/sessionId=([^&]+)/)?.[1];
+              debug('Got sessionId:', sessionId);
+              
+              if (sessionId) {
+                // Send initialize request to the message endpoint
+                const initResponse = await fetchWithRetry(`${url}/message?sessionId=${sessionId}`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${process.env.API_KEY || ''}`
+                  },
+                  body: JSON.stringify(request)
+                });
+                
+                // Send the response
+                console.log(JSON.stringify({
+                  jsonrpc: "2.0",
+                  id: request.id,
+                  result: {
+                    protocolVersion: "2023-07-01",
+                    serverInfo: {
+                      name: "WordPress MCP Server",
+                      version: "1.0.0",
+                      description: "MCP server for WordPress automation and management"
+                    },
+                    capabilities: {
+                      tools: {
+                        supportsLazyLoading: true
+                      }
+                    }
+                  }
+                }));
+                
+                // Continue monitoring the SSE stream for tool notifications
+                break;
+              }
+            } else if (eventType === 'message' && data) {
+              try {
+                const message = JSON.parse(data);
+                debug('Received message:', message);
+                
+                // Forward message to Cursor
+                console.log(JSON.stringify(message));
+              } catch (e) {
+                debug('Error parsing message JSON:', e);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        debug('Error establishing SSE connection:', error);
+        
+        // Send a minimal response to avoid Cursor freezing
+        console.log(JSON.stringify({
           jsonrpc: "2.0",
           id: request.id,
           result: {
-            result: result
+            protocolVersion: "2023-07-01",
+            serverInfo: {
+              name: "WordPress MCP Server",
+              version: "1.0.0",
+              description: "MCP server for WordPress automation and management"
+            },
+            capabilities: {
+              tools: {
+                supportsLazyLoading: true
+              }
+            }
           }
-        };
-        
-        console.log(JSON.stringify(response));
-        debug('Sent tool response');
-      } catch (error) {
-        debug(`Error calling tool: ${error.message}`);
-        
-        // Send error response
-        const errorResponse = {
-          jsonrpc: "2.0",
-          id: request.id,
-          error: {
-            code: -32000,
-            message: error.message
-          }
-        };
-        
-        console.log(JSON.stringify(errorResponse));
+        }));
       }
-    } 
-    else {
-      debug(`Unsupported method: ${request.method}`);
+    } else if (request.method === 'tools/list' || request.method === 'tools/call') {
+      // These requests will be handled by the SSE connection
+      debug(`Request '${request.method}' will be handled by SSE connection`);
+    } else {
+      debug(`Unhandled method: ${request.method}`);
       
-      // Unsupported method
-      const errorResponse = {
+      // Send a generic error response
+      console.log(JSON.stringify({
         jsonrpc: "2.0",
         id: request.id,
         error: {
           code: -32601,
-          message: `Method '${request.method}' not supported`
+          message: `Method '${request.method}' not implemented in MCP wrapper`
         }
-      };
-      
-      console.log(JSON.stringify(errorResponse));
+      }));
     }
   } catch (error) {
-    debug(`Error processing line: ${error.message}`);
+    debug('Error processing request:', error);
     
-    // JSON parse error or other unexpected error
-    const errorResponse = {
+    // Send a parse error response
+    console.log(JSON.stringify({
       jsonrpc: "2.0",
       id: null,
       error: {
         code: -32700,
-        message: "Parse error",
-        data: error.message
+        message: "Parse error"
       }
-    };
-    
-    console.log(JSON.stringify(errorResponse));
+    }));
   }
 });
 
@@ -607,4 +546,30 @@ async function startServerForSmithery() {
   } catch (error) {
     console.error(`[ERROR] Failed to start server: ${error.message}`);
   }
-} 
+}
+
+// Start the MCP server if not running on Render
+if (!process.env.RENDER) {
+  debug('Starting local MCP server...');
+  
+  // Start the HTTP server locally
+  const server = spawn('node', ['src/index.js'], {
+    env: {
+      ...process.env,
+      PORT: process.env.PORT || '3001'
+    },
+    stdio: 'inherit'
+  });
+  
+  server.on('error', (err) => {
+    debug('Failed to start server:', err);
+  });
+  
+  // Ensure server gets cleaned up
+  process.on('exit', () => {
+    server.kill();
+  });
+}
+
+// Log ready
+debug('MCP wrapper ready!'); 

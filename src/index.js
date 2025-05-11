@@ -28,6 +28,15 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
+// Add API key validation middleware
+const validateApiKey = (req, res, next) => {
+  const apiKey = req.headers.authorization?.split('Bearer ')[1];
+  
+  // For now, pass through without validation
+  // TODO: Implement API key validation once SaaS service is built
+  next();
+};
+
 // We store sessions by sessionId => { sseRes, initialized: boolean }
 const sessions = new Map();
 
@@ -74,7 +83,7 @@ app.get('/tools', (req, res) => {
 | Sends event:endpoint => /message?sessionId=XYZ
 | Sends heartbeat every 10 seconds
 */
-app.get('/sse-cursor', (req, res) => {
+app.get('/sse-cursor', validateApiKey, (req, res) => {
   logger.info('[MCP] SSE => /sse-cursor connected');
   
   // SSE headers
@@ -113,7 +122,7 @@ app.get('/sse-cursor', (req, res) => {
 | => "tools/list" => minimal ack => SSE => array of tools
 | => "tools/call" => minimal ack => SSE => result of the call
 */
-app.post('/message', (req, res) => {
+app.post('/message', validateApiKey, (req, res) => {
   logger.info('[MCP] POST /message => body:', req.body, ' query:', req.query);
   
   const sessionId = req.query.sessionId;
@@ -782,4 +791,7 @@ process.on('SIGTERM', async () => {
   
   // Exit process
   setTimeout(() => process.exit(0), 1000);
-}); 
+});
+
+// Export for testing
+module.exports = app; 
