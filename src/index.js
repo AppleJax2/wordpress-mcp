@@ -42,9 +42,9 @@ app.get('/', (req, res) => {
 
 // Tools metadata endpoint - using lazy loading
 app.get('/tools', (req, res) => {
-  // Return basic metadata (names and descriptions only) for quick response
+  // Always return full metadata for tools endpoint
   res.json({
-    tools: getBasicToolsMetadata(),
+    tools: smitheryToolsMetadata || getBasicToolsMetadata(),
     isPartial: true,
     supportsLazyLoading: true,
     lazyLoadingEnabled: true
@@ -200,8 +200,8 @@ app.post('/message', (req, res) => {
     
     // -- tools/list
     case 'tools/list': {
-      // Determine which tools list to send based on mode
-      const toolsList = IS_SMITHERY ? smitheryToolsMetadata : getBasicToolsMetadata();
+      // Use smitheryToolsMetadata for all requests to ensure Cursor compatibility
+      const toolsList = smitheryToolsMetadata;
       
       const toolsMsg = {
         jsonrpc: '2.0',

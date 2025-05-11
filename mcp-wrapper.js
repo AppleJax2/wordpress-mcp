@@ -29,6 +29,9 @@ if (process.env.RENDER) {
 }
 const url = baseUrl;
 
+// Load tool metadata from server
+const { smitheryToolsMetadata } = require(path.join(__dirname, 'src', 'tools', 'index.js'));
+
 // Force Smithery mode to false
 const IS_SMITHERY = false;
 
@@ -43,6 +46,41 @@ console.error(`Debug mode: ${DEBUG ? 'enabled' : 'disabled'}`);
 if (process.env.RENDER) {
   debug('Running on Render.com - assuming HTTP server is managed externally');
 }
+
+// Send immediate tool notification to help Cursor initialize faster
+debug('Sending initial tools notification');
+const startupNotification = {
+  jsonrpc: "2.0",
+  id: "1",
+  result: {
+    protocolVersion: "2023-07-01",
+    serverInfo: {
+      name: "WordPress MCP Server",
+      version: "1.0.0",
+      description: "MCP server for WordPress automation and management"
+    },
+    capabilities: {
+      tools: {
+        supportsLazyLoading: true
+      }
+    }
+  }
+};
+
+// Print immediately so Cursor has something to initialize with
+console.log(JSON.stringify(startupNotification));
+
+// Also send a tools refresh notification with available tools
+const toolsNotification = {
+  jsonrpc: "2.0",
+  method: "tools/refresh",
+  params: { 
+    tools: smitheryToolsMetadata,
+    isPartial: true, 
+    supportsLazyLoading: true 
+  }
+};
+console.log(JSON.stringify(toolsNotification));
 
 // Create an HTTP agent to enable connection reuse with better configuration
 const httpAgent = new http.Agent({ 
