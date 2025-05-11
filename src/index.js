@@ -229,8 +229,6 @@ app.post('/message', (req, res) => {
       const responseProtocolVersion = process.env.MCP_PROTOCOL_VERSION || '2025-03-26';
       logger.info(`[MCP] Using protocol version: ${responseProtocolVersion}`);
       
-
-      
       // SSE => event: message => capabilities
       const initCaps = {
         jsonrpc: '2.0',
@@ -427,7 +425,7 @@ app.get('/stream', validateApiKey, (req, res) => {
   sessions.set(sessionId, { 
     sseRes: res, 
     initialized: false,
-    protocol: '2025-03-26',
+    protocol: process.env.MCP_PROTOCOL_VERSION || '2025-03-26',
     user: req.user
   });
   
@@ -488,8 +486,6 @@ app.post('/stream', validateApiKey, async (req, res) => {
       // Get client protocol version for better compatibility
       const responseProtocolVersion = process.env.MCP_PROTOCOL_VERSION || '2025-03-26';
       logger.info(`[MCP] Using protocol version: ${responseProtocolVersion}`);
-      
-
       
       // Return initialization capabilities
       return res.json({
