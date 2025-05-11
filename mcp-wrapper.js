@@ -78,6 +78,7 @@ const startupNotification = {
       version: "1.0.0",
       description: "MCP server for WordPress automation and management"
     },
+    tools: minimalToolsList,
     capabilities: {
       tools: {
         supportsLazyLoading: true
