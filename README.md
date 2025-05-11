@@ -34,61 +34,7 @@ Supported JSON-RPC methods:
 - `tools/call` - Call a WordPress tool with parameters
 - `notifications/initialized` - Acknowledge client ready state
 
-This implementation is compatible with both the standard MCP protocol and Smithery's remote execution environments.
-
-## Connecting to the Smithery-Hosted Server
-
-This MCP server is hosted remotely at https://wordpress-mcp.onrender.com and available through Smithery.
-
-### Connect via Smithery CLI
-
-To connect to the hosted server using the Smithery CLI:
-
-```bash
-npx @smithery/cli connect http --url https://wordpress-mcp.onrender.com/mcp
-```
-
-### Connect from Claude Desktop
-
-Add the following configuration to your Claude Desktop settings:
-
-```json
-{
-  "mcpServers": {
-    "wordpress-mcp": {
-      "command": "npx",
-      "args": [
-        "@smithery/cli@latest",
-        "connect",
-        "http",
-        "--url",
-        "https://wordpress-mcp.onrender.com/mcp"
-      ]
-    }
-  }
-}
-```
-
-### Connect Using Native MCP Protocol
-
-For clients supporting the native MCP protocol with SSE, use:
-
-```json
-{
-  "mcpServers": {
-    "wordpress-mcp-sse": {
-      "command": "npx",
-      "args": [
-        "@smithery/cli@latest",
-        "connect",
-        "http",
-        "--url",
-        "https://wordpress-mcp.onrender.com/sse-cursor"
-      ]
-    }
-  }
-}
-```
+This implementation is compatible with standard MCP protocol clients like Claude Desktop and Cursor IDE.
 
 ## Tools Available
 
@@ -130,6 +76,15 @@ For clients supporting the native MCP protocol with SSE, use:
 
 ## Installation and Setup
 
+### Getting Your API Key
+
+To use our WordPress MCP tools, you'll need to obtain an API key:
+
+1. Visit [KumoCart.com](https://kumocart.com) and create an account
+2. Navigate to your Profile > API Keys
+3. Generate a new API key
+4. Copy your API key for use in the following setup instructions
+
 ### Installing in Claude Desktop
 
 To use our WordPress MCP tools in Claude Desktop:
@@ -139,7 +94,8 @@ To use our WordPress MCP tools in Claude Desktop:
 3. Click "Add Model Context Protocol Server"
 4. Enter the following details:
    - Name: WordPress MCP
-   - URL: `https://wordpress-mcp.onrender.com/mcp`
+   - URL: `https://wordpress-mcp.onrender.com/sse-cursor`
+   - API Key: Your KumoCart API key
 5. Click "Save"
 
 Once configured, you can access WordPress automation tools by asking Claude to perform WordPress and Divi tasks.
@@ -156,46 +112,17 @@ To add our WordPress MCP tools to Cursor:
 {
   "mcpServers": {
     "wordpress-mcp": {
-      "command": "npx",
-      "args": [
-        "@smithery/cli@latest",
-        "connect",
-        "http",
-        "--url",
-        "https://wordpress-mcp.onrender.com/mcp"
-      ]
+      "url": "https://wordpress-mcp.onrender.com/sse-cursor",
+      "apiKey": "YOUR_API_KEY"
     }
   }
 }
 ```
 
-4. Replace `YOUR_API_KEY` with the key provided to you
+4. Replace `YOUR_API_KEY` with your KumoCart API key
 5. Restart Cursor
 
 Now you can ask the Cursor AI assistant to perform WordPress and Divi automation tasks.
-
-## Direct Connection to Render.com Deployment
-
-If you've deployed this server to Render.com, you can connect directly to it using:
-
-```json
-{
-  "mcpServers": {
-    "wordpress-mcp-render": {
-      "command": "npx",
-      "args": [
-        "@smithery/cli@latest",
-        "connect",
-        "http",
-        "--url",
-        "https://wordpress-mcp.onrender.com/sse-cursor"
-      ]
-    }
-  }
-}
-```
-
-This uses the native MCP protocol implementation with SSE for streaming responses.
 
 ## Usage Guide
 
@@ -423,72 +350,22 @@ AI Agent: "Your lead generation forms are complete and optimized. I've created t
 
 ## Getting Access
 
-To get access to our WordPress MCP tools, visit [github.com/AppleJax2/wordpress-mcp](https://github.com/AppleJax2/wordpress-mcp) or contact us at github@applejax2.dev.
+To get access to our WordPress MCP tools, visit [KumoCart.com](https://kumocart.com) to create an account and subscribe to a plan that fits your needs.
 
 ## License
 
-MIT 
-
-## Deployment on Render.com
-
-This server can be deployed on Render.com using the provided `render.yaml` configuration:
-
-1. Fork this repository
-2. Sign up for a Render account
-3. Connect your GitHub account
-4. Create a new Web Service from your forked repository
-5. Add the following environment secrets:
-   - `WP_SITE_URL` - Your WordPress site URL
-   - `WP_USERNAME` - Your WordPress admin username
-   - `WP_APP_PASSWORD` - Your WordPress application password
-
-Once deployed, your server will be available at `https://wordpress-mcp.onrender.com` or a similar URL provided by Render.
-
-## Publishing to Smithery
-
-To publish your WordPress MCP server to Smithery:
-
-1. Install the Smithery CLI: `npm install -g @smithery/cli`
-2. Login to Smithery: `npm run login:smithery`
-3. Update your server details in `smithery.json` or `smithery.yaml`
-4. Publish to Smithery: `npm run publish:smithery`
-
-Your server will be available at `https://wordpress-mcp.smithery.ai/YOUR_USERNAME/wordpress-mcp`
+Proprietary - KumoCart © 2025
 
 ## MCP Protocol Testing
 
 To test the MCP protocol implementation:
 
-1. Start the server: `npm run start`
-2. Connect to the SSE endpoint: `curl -N http://localhost:3001/sse-cursor`
-3. The server will respond with an event containing the message endpoint
-4. Send a JSON-RPC request to the message endpoint:
+1. Connect to the SSE endpoint: `curl -N https://wordpress-mcp.onrender.com/sse-cursor`
+2. The server will respond with an event containing the message endpoint
+3. Send a JSON-RPC request to the message endpoint:
 
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","id":"1","method":"initialize"}' http://localhost:3001/message?sessionId=YOUR_SESSION_ID
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_API_KEY" -d '{"jsonrpc":"2.0","id":"1","method":"initialize"}' https://wordpress-mcp.onrender.com/message?sessionId=YOUR_SESSION_ID
 ```
 
-5. You should receive a minimal HTTP acknowledgment and see the actual response in the SSE stream
-
-## Connect Cursor to Remote Server
-
-To connect Cursor to your remote Render-hosted MCP server, update your Cursor MCP configuration:
-
-```json
-{
-  "mcpServers": {
-    "wordpress-mcp-remote": {
-      "command": "npx",
-      "args": [
-        "@smithery/cli@latest",
-        "connect",
-        "http",
-        "--url",
-        "https://wordpress-mcp.onrender.com/mcp"
-      ]
-    }
-  }
-}
-```
-
-Replace `https://wordpress-mcp.onrender.com` with your actual Render.com URL. 
+4. You should receive a minimal HTTP acknowledgment and see the actual response in the SSE stream 

@@ -12,12 +12,6 @@ mcp:
     sseConnect: "/sse-cursor" # Specify the SSE connection endpoint
     message: "/message" # Specify the message endpoint
 
-# Deployments configuration for remote hosting
-deployments:
-  render:
-    url: "https://wordpress-mcp.onrender.com"
-    type: "http"
-
 # Command to start the server for Smithery Hosted Deployment
 startCommand:
   type: "http"

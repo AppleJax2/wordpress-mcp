@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "wordpress-mcp-render": {
+      "url": "https://wordpress-mcp.onrender.com/sse-cursor"
+    }
+  }
+} 

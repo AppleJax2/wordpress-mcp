@@ -77,12 +77,6 @@
       "message": "/message"
     }
   },
-  "deployments": {
-    "render": {
-      "url": "https://wordpress-mcp.onrender.com",
-      "type": "http"
-    }
-  },
   "resources": {
     "memory": "medium",
     "cpu": "medium"
