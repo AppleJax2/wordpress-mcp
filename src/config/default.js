@@ -1,5 +1,5 @@
 /**
- * Default configuration for KumoCart MCP Server
+ * Default configuration for Tanuki MCP Server
  */
 module.exports = {
   // WordPress Site Configuration
@@ -48,29 +48,29 @@ module.exports = {
   
   // Subscription Plans
   plans: {
-    freeKitten: {
-      name: 'Free Kitten',
+    shapeshiftBasic: {
+      name: 'Shapeshift Basic',
       monthlyPrice: 0,
       monthlyOperations: 100,
       concurrentJobs: 1,
       dataRetentionDays: 7
     },
-    starterCat: {
-      name: 'Starter Cat',
+    tricksterPro: {
+      name: 'Trickster Pro',
       monthlyPrice: 29,
       monthlyOperations: 2000,
       concurrentJobs: 2,
       dataRetentionDays: 30
     },
-    proLynx: {
-      name: 'Pro Lynx',
+    yokaiMaster: {
+      name: 'Yokai Master',
       monthlyPrice: 99,
       monthlyOperations: 10000,
       concurrentJobs: 5,
       dataRetentionDays: 90
     },
-    enterprisePanther: {
-      name: 'Enterprise Panther',
+    legendaryTanuki: {
+      name: 'Legendary Tanuki',
       monthlyPrice: null, // Custom pricing
       monthlyOperations: null, // Custom limit
       concurrentJobs: null, // Custom limit

@@ -1,7 +1,7 @@
 {
   "mcpServers": {
-    "kumocart-wordpress": {
+    "tanuki-wordpress": {
       "url": "https://wordpress-mcp.onrender.com/sse-cursor"
     }
   }
-} 
+}

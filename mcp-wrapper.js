@@ -1,7 +1,7 @@
 /**
- * KumoCart MCP Wrapper
+ * Tanuki MCP Wrapper
  * 
- * This script provides a simple interface for using KumoCart tools
+ * This script provides a simple interface for using Tanuki tools
  * directly from the command line or Node.js scripts.
  * 
  * Usage:
@@ -18,7 +18,7 @@ const { execSync } = require('child_process');
 const { wordpressTools, wordpressToolsMetadata } = require(path.join(__dirname, 'src', 'tools', 'index.js'));
 
 // Print header
-console.log("\n\x1b[1;36m=== KumoCart CLI Wrapper ===\x1b[0m");
+console.log("\n\x1b[1;36m=== Tanuki CLI Wrapper ===\x1b[0m");
 console.log("\x1b[36mExecute WordPress browser automation tools directly\x1b[0m\n");
 
 // If tool name is provided, execute directly and exit

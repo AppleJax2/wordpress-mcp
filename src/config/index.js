@@ -1,5 +1,5 @@
 /**
- * Configuration loader for KumoCart MCP Server
+ * Configuration loader for Tanuki MCP Server
  */
 require('dotenv').config();
 const defaultConfig = require('./default');

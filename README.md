@@ -1,6 +1,6 @@
-# KumoCart - WordPress Browser Automation
+# Tanuki - WordPress Browser Automation
 
-A specialized Model Context Protocol (MCP) server for WordPress browser automation. KumoCart provides tools for AI agents to create, manage, and customize WordPress websites with a focus on the Divi theme builder.
+A specialized Model Context Protocol (MCP) server for WordPress browser automation. Tanuki provides tools for AI agents to create, manage, and customize WordPress websites with a focus on the Divi theme builder.
 
 ## Features
 
@@ -21,7 +21,7 @@ A specialized Model Context Protocol (MCP) server for WordPress browser automati
 
 ## MCP Protocol Implementation
 
-KumoCart implements the Model Context Protocol (MCP) with Server-Sent Events (SSE) for streaming responses, following the MCP protocol flow:
+Tanuki implements the Model Context Protocol (MCP) with Server-Sent Events (SSE) for streaming responses, following the MCP protocol flow:
 
 1. Client connects to `/sse-cursor` to establish an SSE connection
 2. Server responds with an event containing the message endpoint: `/message?sessionId=<UUID>`
@@ -76,11 +76,11 @@ This implementation is compatible with standard MCP protocol clients like Claude
 
 ## Getting Started
 
-### 1. Create a KumoCart Account
+### 1. Create a Tanuki Account
 
 To use our WordPress automation tools, first create an account:
 
-1. Visit [KumoCart.com](https://kumocart.com) and sign up
+1. Visit [Tanuki.com](https://tanuki.com) and sign up
 2. Choose a subscription plan that fits your needs
 3. Complete the registration process
 
@@ -88,7 +88,7 @@ To use our WordPress automation tools, first create an account:
 
 After creating your account, you'll need to connect your WordPress site:
 
-1. In your KumoCart dashboard, navigate to **WordPress Sites**
+1. In your Tanuki dashboard, navigate to **WordPress Sites**
 2. Click **Add New Site**
 3. Enter your WordPress site information:
    - Site Name (for your reference)
@@ -100,7 +100,7 @@ After creating your account, you'll need to connect your WordPress site:
 > 1. Log in to your WordPress admin
 > 2. Go to Users → Profile
 > 3. Scroll to "Application Passwords"
-> 4. Enter "KumoCart" as the name
+> 4. Enter "Tanuki" as the name
 > 5. Click "Add New Application Password"
 > 6. Copy the generated password
 
@@ -110,7 +110,7 @@ Your credentials are securely stored and encrypted. Our service uses these crede
 
 Once your WordPress site is configured:
 
-1. In your KumoCart dashboard, go to **API Keys**
+1. In your Tanuki dashboard, go to **API Keys**
 2. Click **Generate New Key**
 3. Name your key (e.g., "Claude Desktop" or "Cursor IDE")
 4. Copy your new API key for use in the next steps
@@ -123,9 +123,9 @@ To use our WordPress automation tools in Claude Desktop:
 2. Go to Settings > Extensions
 3. Click "Add Model Context Protocol Server"
 4. Enter the following details:
-   - Name: KumoCart WordPress MCP
+   - Name: Tanuki WordPress MCP
    - URL: `https://wordpress-mcp.onrender.com/sse-cursor`
-   - API Key: Your KumoCart API key
+   - API Key: Your Tanuki API key
 5. Click "Save"
 
 Once configured, you can access WordPress automation tools by asking Claude to perform WordPress and Divi tasks.
@@ -141,7 +141,7 @@ To add our WordPress automation tools to Cursor:
 ```json
 {
   "mcpServers": {
-    "kumocart-wordpress": {
+    "tanuki-wordpress": {
       "url": "https://wordpress-mcp.onrender.com/sse-cursor",
       "apiKey": "YOUR_API_KEY"
     }
@@ -149,22 +149,22 @@ To add our WordPress automation tools to Cursor:
 }
 ```
 
-4. Replace `YOUR_API_KEY` with your KumoCart API key
+4. Replace `YOUR_API_KEY` with your Tanuki API key
 5. Restart Cursor
 
 Now you can ask the Cursor AI assistant to perform WordPress and Divi automation tasks.
 
 ## Managing Multiple WordPress Sites
 
-With KumoCart, you can manage multiple WordPress sites from a single account:
+With Tanuki, you can manage multiple WordPress sites from a single account:
 
-1. Add each site in your KumoCart dashboard
+1. Add each site in your Tanuki dashboard
 2. When executing tasks, specify which site to use with the `siteId` parameter
 3. If not specified, your default site will be used
 
 ## API Key Management
 
-Your KumoCart dashboard provides several API key management features:
+Your Tanuki dashboard provides several API key management features:
 
 - **Multiple Keys**: Create separate keys for different tools or team members
 - **Usage Tracking**: Monitor operations performed with each key
@@ -177,7 +177,7 @@ Our WordPress automation services provide powerful tools that can be utilized th
 
 ## Example User Journeys
 
-Below are example user journeys demonstrating how KumoCart can automate website development through AI agent interactions.
+Below are example user journeys demonstrating how Tanuki can automate website development through AI agent interactions.
 
 ### 1. Business Website Creation with Divi
 
@@ -315,13 +315,13 @@ AI Agent: "Your site has been fully optimized for SEO. I've fixed all meta descr
 
 If you encounter any issues or have questions about our services:
 
-1. Visit the Help Center in your KumoCart dashboard
-2. Email our support team at support@kumocart.com
+1. Visit the Help Center in your Tanuki dashboard
+2. Email our support team at support@tanuki.com
 3. Use the live chat support available on our website
 
 ## License
 
-Proprietary - KumoCart © 2025
+Proprietary - Tanuki © 2025
 
 ## MCP Protocol Testing
 
@@ -332,7 +332,7 @@ For developers who want to test the MCP protocol implementation directly:
 3. Send a JSON-RPC request to the message endpoint:
 
 ```bash
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer kc_live_YOUR_API_KEY" -d '{"jsonrpc":"2.0","id":"1","method":"initialize"}' https://wordpress-mcp.onrender.com/message?sessionId=YOUR_SESSION_ID
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer tn_live_YOUR_API_KEY" -d '{"jsonrpc":"2.0","id":"1","method":"initialize"}' https://wordpress-mcp.onrender.com/message?sessionId=YOUR_SESSION_ID
 ```
 
 4. You should receive a minimal HTTP acknowledgment and see the actual response in the SSE stream 

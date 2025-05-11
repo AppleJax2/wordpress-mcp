@@ -1,23 +1,23 @@
-# API Key Authentication for KumoCart
+# API Key Authentication for Tanuki
 
-This document outlines how API key authentication works in the KumoCart SaaS model for WordPress browser automation.
+This document outlines how API key authentication works in the Tanuki SaaS model for WordPress browser automation.
 
 ## Overview
 
-KumoCart implements a robust API authentication system to secure access to WordPress automation services. Each API key is associated with a specific user account and subscription plan.
+Tanuki implements a robust API authentication system to secure access to WordPress automation services. Each API key is associated with a specific user account and subscription plan.
 
 ## API Key Format
 
 API keys follow this format:
-- Prefix: `kc_live_` (KumoCart Live)
+- Prefix: `tn_live_` (Tanuki Live)
 - 32 character random string
-- Example: `kc_live_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6`
+- Example: `tn_live_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6`
 
 ## Implementation Details
 
 ### 1. User Registration and API Key Generation
 
-When a user signs up for the KumoCart SaaS service:
+When a user signs up for the Tanuki SaaS service:
 1. User creates an account with email and password
 2. User selects a subscription plan
 3. User is assigned to that plan in the database
@@ -120,9 +120,9 @@ RATE_LIMIT_MAX_REQUESTS=60           # Default max requests per window
 ### Claude Desktop
 
 ```
-Name: KumoCart WordPress MCP
+Name: Tanuki WordPress MCP
 URL: https://wordpress-mcp.onrender.com/sse-cursor
-API Key: kc_live_your_api_key
+API Key: tn_live_your_api_key
 ```
 
 ### Cursor IDE
@@ -130,9 +130,9 @@ API Key: kc_live_your_api_key
 ```json
 {
   "mcpServers": {
-    "kumocart-wordpress": {
+    "tanuki-wordpress": {
       "url": "https://wordpress-mcp.onrender.com/sse-cursor",
-      "apiKey": "kc_live_your_api_key"
+      "apiKey": "tn_live_your_api_key"
     }
   }
 }
@@ -143,12 +143,12 @@ API Key: kc_live_your_api_key
 You can test your API key using the `test-render-connection.js` script:
 
 ```
-API_KEY=kc_live_your_api_key node test-render-connection.js
+API_KEY=tn_live_your_api_key node test-render-connection.js
 ```
 
-## Integration with KumoCart Website
+## Integration with Tanuki Website
 
-The API key system is designed to integrate with our KumoCart website, where users can:
+The API key system is designed to integrate with our Tanuki website, where users can:
 1. Sign up and manage their account
 2. Choose/update subscription plans 
 3. Generate and revoke API keys

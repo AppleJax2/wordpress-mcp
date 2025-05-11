@@ -3,11 +3,11 @@ const fetch = require('node-fetch');
 // Replace this with your actual Render URL
 const renderUrl = 'https://wordpress-mcp.onrender.com';
 // Add your API key here to test authentication
-const apiKey = process.env.API_KEY || 'kc_live_test-api-key';
+const apiKey = process.env.API_KEY || 'tn_live_test-api-key';
 
 async function testConnection() {
   try {
-    console.log('Testing connection to KumoCart WordPress MCP server on Render...');
+    console.log('Testing connection to Tanuki WordPress MCP server on Render...');
     
     // Test basic server info endpoint
     const response = await fetch(`${renderUrl}/`);
@@ -53,7 +53,7 @@ async function testConnection() {
     console.log(`
 {
   "mcpServers": {
-    "kumocart-wordpress": {
+    "tanuki-wordpress": {
       "url": "${renderUrl}/sse-cursor",
       "apiKey": "YOUR_API_KEY"
     }
@@ -68,7 +68,7 @@ async function testConnection() {
     console.log('2. Go to Settings > Extensions');
     console.log('3. Click "Add Model Context Protocol Server"');
     console.log('4. Enter the following details:');
-    console.log(`   Name: KumoCart WordPress MCP`);
+    console.log(`   Name: Tanuki WordPress MCP`);
     console.log(`   URL: ${renderUrl}/sse-cursor`);
     console.log(`   API Key: YOUR_API_KEY`);
     

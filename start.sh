@@ -27,7 +27,7 @@ export REQUIRE_API_KEY=${REQUIRE_API_KEY:-false}
 export RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
 export RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-60}
 
-echo "Starting WordPress MCP Server..."
+echo "Starting Tanuki MCP Server"
 echo "Environment: NODE_ENV=$NODE_ENV"
 echo "Port: $PORT"
 echo "Log Level: $LOG_LEVEL"

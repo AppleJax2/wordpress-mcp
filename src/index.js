@@ -40,9 +40,9 @@ const validateApiKey = (req, res, next) => {
   const apiKey = authHeader.split('Bearer ')[1];
 
   // Validate API key format
-  if (!apiKey.startsWith('kc_live_')) {
+  if (!apiKey.startsWith('tn_live_')) {
     return res.status(401).json({ 
-      error: 'Invalid API key format. API keys should start with kc_live_.'
+      error: 'Invalid API key format. API keys should start with tn_live_.'
     });
   }
 
@@ -81,9 +81,9 @@ let sessions = new Map();
 // Home route
 app.get('/', (req, res) => {
   res.json({
-    name: 'KumoCart WordPress MCP Server',
+    name: 'Tanuki WordPress MCP Server',
     version: '1.0.0',
-    description: 'Cloud-powered WordPress browser automation, purr-fectly simple.',
+    description: 'Cloud-powered WordPress browser automation, magically transformed.',
     status: 'running'
   });
 });
@@ -237,9 +237,9 @@ app.post('/message', (req, res) => {
             logging: {}
           },
           serverInfo: {
-            name: 'KumoCart WordPress MCP Server',
+            name: 'Tanuki WordPress MCP Server',
             version: '1.0.0',
-            description: 'Cloud-powered WordPress browser automation, purr-fectly simple.'
+            description: 'Cloud-powered WordPress browser automation, magically transformed.'
           }
         }
       };
@@ -477,9 +477,9 @@ app.post('/stream', validateApiKey, async (req, res) => {
         result: {
           protocolVersion: "2025-03-26",
           serverInfo: {
-            name: "KumoCart WordPress MCP Server",
+            name: "Tanuki WordPress MCP Server",
             version: "1.0.0",
-            description: "Cloud-powered WordPress browser automation, purr-fectly simple."
+            description: "Cloud-powered WordPress browser automation, magically transformed."
           },
           capabilities: {
             tools: {
@@ -638,13 +638,13 @@ if (process.env.NODE_ENV !== 'production') {
     
     // Generate a new API key
     const keyId = uuidv4().replace(/-/g, '').substring(0, 24);
-    const apiKey = `kc_live_${keyId}`;
+    const apiKey = `tn_live_${keyId}`;
     
     res.json({
       success: true,
       apiKey,
       label: label || 'Development Key',
-      message: 'This key is for development purposes only. In production, keys will be managed through the KumoCart dashboard.'
+      message: 'This key is for development purposes only. In production, keys will be managed through the Tanuki dashboard.'
     });
   });
 }
@@ -652,7 +652,7 @@ if (process.env.NODE_ENV !== 'production') {
 // Start the server
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  logger.info(`KumoCart MCP Server running on port ${PORT}`);
+  logger.info(`Tanuki MCP Server running on port ${PORT}`);
   
   if (process.env.NODE_ENV !== 'production') {
     logger.info('Development mode active');
