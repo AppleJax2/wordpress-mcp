@@ -17,8 +17,13 @@ const logger = require('./utils/logger');
 // Create Express app
 const app = express();
 
-// Middleware
-app.use(cors());
+// Enhanced CORS configuration
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -132,6 +137,7 @@ app.get('/sse-cursor', validateApiKey, (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
   
   // Generate a sessionId
   const sessionId = uuidv4();
@@ -221,7 +227,7 @@ app.post('/message', (req, res) => {
         jsonrpc: '2.0',
         id: rpc.id, // Use the same ID to prevent "unknown ID" errors
         result: {
-          protocolVersion: '2025-03-26',
+          protocolVersion: '2024-11-05',
           capabilities: {
             tools: {
               listChanged: true,
@@ -475,7 +481,7 @@ app.post('/stream', validateApiKey, async (req, res) => {
         jsonrpc: "2.0",
         id: message.id,
         result: {
-          protocolVersion: "2025-03-26",
+          protocolVersion: "2024-11-05",
           serverInfo: {
             name: "Tanuki WordPress MCP Server",
             version: "1.0.0",
