@@ -47,7 +47,7 @@ ENV NODE_ENV=production \
     MAX_API_CONNECTIONS=3 \
     MAX_BROWSER_CONNECTIONS=1 \
     CONNECTION_TIMEOUT=10000 \
-    MCP_PROTOCOL_VERSION=2023-07-01 \
+    MCP_PROTOCOL_VERSION=2025-03-26 \
     DEBUG_MCP=true
 
 # Set healthcheck to ensure container is running properly

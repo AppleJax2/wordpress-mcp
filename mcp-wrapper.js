@@ -46,7 +46,7 @@ if (process.argv.length >= 3) {
     .catch(error => {
       console.error(`\x1b[31mError: ${error.message}\x1b[0m`);
       process.exit(1);
-    });
+});
 } else {
   // Interactive mode
   
@@ -56,20 +56,20 @@ if (process.argv.length >= 3) {
   // Display tools as a menu
   wordpressToolsMetadata.forEach((tool, index) => {
     console.log(`${index + 1}. \x1b[36m${tool.function.name}\x1b[0m: ${tool.function.description}`);
-  });
-  
-  const rl = readline.createInterface({
-    input: process.stdin,
+});
+
+const rl = readline.createInterface({
+  input: process.stdin,
     output: process.stdout
   });
-  
+      
   // Prompt for tool selection
   rl.question('\nEnter tool number to execute (or q to quit): ', (answer) => {
     if (answer.toLowerCase() === 'q') {
       rl.close();
       return;
-    }
-    
+      }
+      
     const toolIndex = parseInt(answer) - 1;
     
     if (isNaN(toolIndex) || toolIndex < 0 || toolIndex >= wordpressToolsMetadata.length) {
@@ -86,7 +86,7 @@ if (process.argv.length >= 3) {
       let args = {};
       
       if (argsInput.trim()) {
-        try {
+              try {
           args = JSON.parse(argsInput);
         } catch (error) {
           console.error('\x1b[31mError parsing JSON arguments\x1b[0m');
@@ -109,13 +109,13 @@ if (process.argv.length >= 3) {
               rl.close();
               execSync(`node ${__filename}`, { stdio: 'inherit' });
             } else {
-              rl.close();
+  rl.close();
             }
           });
         })
         .catch(error => {
           console.error(`\n\x1b[31mError: ${error.message}\x1b[0m`);
-          rl.close();
+  rl.close();
         });
     });
   });
@@ -123,4 +123,4 @@ if (process.argv.length >= 3) {
   rl.on('close', () => {
     console.log('\nGoodbye!');
   });
-}
+  }
