@@ -226,11 +226,10 @@ app.post('/message', (req, res) => {
       sessionData.initialized = true;
       
       // Get client protocol version for better compatibility
-      const clientProtocolVersion = rpc.params?.protocolVersion;
-      // Use client version if provided, otherwise fall back to server version
-      const responseProtocolVersion = clientProtocolVersion || process.env.MCP_PROTOCOL_VERSION || '2024-11-05';
+      const responseProtocolVersion = process.env.MCP_PROTOCOL_VERSION || '2025-03-26';
+      logger.info(`[MCP] Using protocol version: ${responseProtocolVersion}`);
       
-      logger.info(`[MCP] Client requested protocol version: ${clientProtocolVersion}, using: ${responseProtocolVersion}`);
+
       
       // SSE => event: message => capabilities
       const initCaps = {
@@ -487,11 +486,10 @@ app.post('/stream', validateApiKey, async (req, res) => {
       sessionData.initialized = true;
       
       // Get client protocol version for better compatibility
-      const clientProtocolVersion = message.params?.protocolVersion;
-      // Use client version if provided, otherwise fall back to server version
-      const responseProtocolVersion = clientProtocolVersion || process.env.MCP_PROTOCOL_VERSION || '2024-11-05';
+      const responseProtocolVersion = process.env.MCP_PROTOCOL_VERSION || '2025-03-26';
+      logger.info(`[MCP] Using protocol version: ${responseProtocolVersion}`);
       
-      logger.info(`[MCP] Client requested protocol version: ${clientProtocolVersion}, using: ${responseProtocolVersion}`);
+
       
       // Return initialization capabilities
       return res.json({
