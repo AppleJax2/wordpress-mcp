@@ -39,7 +39,7 @@ services:
       - key: RATE_LIMIT_MAX_REQUESTS
         value: 60
       - key: MCP_PROTOCOL_VERSION
-        value: 2025-03-26
+        value: 2024-11-05
 
 databases:
   - name: wordpress_site_url
