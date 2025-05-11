@@ -94,20 +94,11 @@ if (IS_SMITHERY) {
 // Send a simplified static tool list immediately in Smithery mode
 if (IS_SMITHERY) {
   debug('Sending static tools list for Smithery compatibility');
-  const simpleTools = [
-    {
-      type: "function",
-      function: {
-        name: "wordpress_site_info",
-        description: "Get information about the WordPress site",
-        parameters: { type: "object", properties: {}, required: [] }
-      }
-    }
-  ];
+  const simpleTools = minimalToolsList; // Use all available tools from smitheryToolsMetadata
   const quickToolsNotification = {
     jsonrpc: "2.0",
     method: "tools/refresh",
-    params: { tools: simpleTools, isPartial: false, supportsLazyLoading: false }
+    params: { tools: simpleTools, isPartial: true, supportsLazyLoading: true }
   };
   console.log(JSON.stringify(quickToolsNotification));
 }
