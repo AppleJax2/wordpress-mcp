@@ -1,8 +1,42 @@
-#!/bin/sh
+#!/bin/bash
 # Startup script for WordPress MCP Server
+
+# Force Node.js to use a specific version
+export NODE_VERSION=${NODE_VERSION:-18.12.1}
+
+# Set default environment if not specified
+export NODE_ENV=${NODE_ENV:-development}
+
+# Set default port if not set
+export PORT=${PORT:-3001}
+
+# Set default log level if not set
+export LOG_LEVEL=${LOG_LEVEL:-info}
+
+# Set default browser mode (headless)
+export HEADLESS=${HEADLESS:-true}
+
+# Configure browser connection limits
+export MAX_API_CONNECTIONS=${MAX_API_CONNECTIONS:-3}
+export MAX_BROWSER_CONNECTIONS=${MAX_BROWSER_CONNECTIONS:-1}
+
+# Enable or disable API key auth
+export REQUIRE_API_KEY=${REQUIRE_API_KEY:-false}
+
+# Control rate limiting settings
+export RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
+export RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-60}
 
 echo "Starting WordPress MCP Server..."
 echo "Environment: NODE_ENV=$NODE_ENV"
+echo "Port: $PORT"
+echo "Log Level: $LOG_LEVEL"
+echo "Headless Mode: $HEADLESS"
+echo "API Connections: $MAX_API_CONNECTIONS"
+echo "Browser Connections: $MAX_BROWSER_CONNECTIONS"
+echo "API Key Auth: $REQUIRE_API_KEY"
+echo "Rate Limit Window: $RATE_LIMIT_WINDOW_MS ms"
+echo "Rate Limit Requests: $RATE_LIMIT_MAX_REQUESTS"
 
 # Check for override file and use it
 if [ -f "/app/.env.override" ]; then
@@ -32,8 +66,6 @@ fi
 # Default connection settings for production use
 export CONNECTION_TIMEOUT=${CONNECTION_TIMEOUT:-30000}
 export CLEANUP_INTERVAL_MS=${CLEANUP_INTERVAL_MS:-300000}
-export MAX_API_CONNECTIONS=${MAX_API_CONNECTIONS:-3}
-export MAX_BROWSER_CONNECTIONS=${MAX_BROWSER_CONNECTIONS:-2}
 
 # Start the HTTP server in the background
 echo "Starting HTTP server on port $PORT..."

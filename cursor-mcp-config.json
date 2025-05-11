@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "wordpress-mcp-render": {
+    "kumocart-wordpress": {
       "url": "https://wordpress-mcp.onrender.com/sse-cursor"
     }
   }

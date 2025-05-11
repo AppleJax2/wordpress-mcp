@@ -1,17 +1,17 @@
-# API Key Authentication for WordPress MCP Server
+# API Key Authentication for KumoCart
 
-This document outlines how API key authentication will work in our SaaS model for WordPress MCP Server.
+This document outlines how API key authentication works in the KumoCart SaaS model for WordPress browser automation.
 
 ## Overview
 
-The WordPress MCP Server uses API keys to authenticate requests from clients, such as Claude Desktop or Cursor IDE. Each API key is associated with a specific user account and subscription plan.
+KumoCart implements a robust API authentication system to secure access to WordPress automation services. Each API key is associated with a specific user account and subscription plan.
 
 ## API Key Format
 
 API keys follow this format:
-- Prefix: `wpk_` (WordPress Key)
+- Prefix: `kc_live_` (KumoCart Live)
 - 32 character random string
-- Example: `wpk_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6`
+- Example: `kc_live_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6`
 
 ## Implementation Details
 
@@ -120,9 +120,9 @@ RATE_LIMIT_MAX_REQUESTS=60           # Default max requests per window
 ### Claude Desktop
 
 ```
-Name: WordPress MCP
+Name: KumoCart WordPress MCP
 URL: https://wordpress-mcp.onrender.com/sse-cursor
-API Key: wpk_your_api_key
+API Key: kc_live_your_api_key
 ```
 
 ### Cursor IDE
@@ -130,9 +130,9 @@ API Key: wpk_your_api_key
 ```json
 {
   "mcpServers": {
-    "wordpress-mcp": {
+    "kumocart-wordpress": {
       "url": "https://wordpress-mcp.onrender.com/sse-cursor",
-      "apiKey": "wpk_your_api_key"
+      "apiKey": "kc_live_your_api_key"
     }
   }
 }
@@ -143,7 +143,7 @@ API Key: wpk_your_api_key
 You can test your API key using the `test-render-connection.js` script:
 
 ```
-API_KEY=wpk_your_api_key node test-render-connection.js
+API_KEY=kc_live_your_api_key node test-render-connection.js
 ```
 
 ## Integration with KumoCart Website

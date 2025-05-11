@@ -1,38 +1,45 @@
 services:
   - type: web
     name: wordpress-mcp
-    env: docker
     plan: starter
-    autoDeploy: true
-    dockerfilePath: Dockerfile.smithery
+    env: node
+    region: oregon
+    buildCommand: npm ci
+    startCommand: ./start.sh
+    healthCheckPath: /
+    domains:
+      - wordpress-mcp.onrender.com
     envVars:
-      - key: WP_SITE_URL
-        fromSecret: WP_SITE_URL
-      - key: WP_USERNAME
-        fromSecret: WP_USERNAME
-      - key: WP_APP_PASSWORD
-        fromSecret: WP_APP_PASSWORD
-      - key: RENDER
-        value: "true"
+      - key: NODE_VERSION
+        value: 18.12.1
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
+      - key: WP_SITE_URL
+        fromDatabase:
+          name: wordpress_site_url
+          property: connectionString
+      - key: WP_USERNAME
+        sync: false
+      - key: WP_APP_PASSWORD
+        sync: false
+      - key: LOG_LEVEL
+        value: info
       - key: HEADLESS
         value: "true"
-      - key: SLOWMO
-        value: "0"
       - key: MAX_API_CONNECTIONS
-        value: "1"
+        value: 3
       - key: MAX_BROWSER_CONNECTIONS
-        value: "1"
-      - key: SMITHERY
+        value: 1
+      - key: REQUIRE_API_KEY
         value: "true"
-      - key: MCP_PROTOCOL_VERSION
-        value: "2023-07-01"
-      - key: DEBUG_MCP
-        value: "true"
-      - key: PORT
-        value: "3001"
-      - key: CONNECTION_TIMEOUT
-        value: "5000"
-      - key: CLEANUP_INTERVAL_MS
-        value: "60000" 
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 60000
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 60
+
+databases:
+  - name: wordpress_site_url
+    databaseName: wordpress_site_url
+    user: wordpress_site_url_user 

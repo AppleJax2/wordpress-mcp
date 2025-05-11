@@ -29,8 +29,6 @@ const ToolClasses = {
 // Store tool instances
 let toolInstances = {};
 
-// Intentionally left blank - removed Smithery specific code
-
 // Lazily get a tool instance
 function getToolInstance(toolClassName) {
   if (!toolInstances[toolClassName]) {

@@ -9,14 +9,10 @@ const {
   wordpressTools, 
   wordpressToolsMetadata, 
   getBasicToolsMetadata, 
-  getFullToolMetadata,
-  smitheryToolsMetadata 
+  getFullToolMetadata
 } = require('./tools');
 const config = require('./config');
 const logger = require('./utils/logger');
-
-// Force Smithery mode to false
-const IS_SMITHERY = false;
 
 // Create Express app
 const app = express();
@@ -25,6 +21,53 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// API Key authentication middleware
+const validateApiKey = (req, res, next) => {
+  // Skip API key validation if disabled in config
+  if (!config.auth.requireApiKey) {
+    return next();
+  }
+
+  // Extract API key from Authorization header
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ 
+      error: 'Missing API key. Please provide a valid API key in the Authorization header.'
+    });
+  }
+
+  const apiKey = authHeader.split('Bearer ')[1];
+
+  // Validate API key format
+  if (!apiKey.startsWith('kc_live_')) {
+    return res.status(401).json({ 
+      error: 'Invalid API key format. API keys should start with kc_live_.'
+    });
+  }
+
+  // TODO: In production, this would validate the API key against the database
+  // For now, we're accepting all properly formatted keys for development
+  
+  // In production, we would:
+  // 1. Check if the key exists in the database (hashed)
+  // 2. Verify if the user account is active
+  // 3. Check if the subscription is valid
+  // 4. Track API usage for billing
+  // 5. Apply rate limiting
+
+  // Attach user info to request for later use
+  req.user = {
+    apiKey: apiKey,
+    plan: 'development',
+    operationsRemaining: 1000
+  };
+
+  // Track API usage
+  logger.info(`API request with key: ${apiKey.substring(0, 8)}...`);
+  
+  next();
+};
 
 // Simple request logging
 app.use((req, res, next) => {
@@ -37,14 +80,19 @@ let sessions = new Map();
 
 // Home route
 app.get('/', (req, res) => {
-  res.send('WordPress MCP Server is running');
+  res.json({
+    name: 'KumoCart WordPress MCP Server',
+    version: '1.0.0',
+    description: 'Cloud-powered WordPress browser automation, purr-fectly simple.',
+    status: 'running'
+  });
 });
 
 // Tools metadata endpoint - using lazy loading
-app.get('/tools', (req, res) => {
-  // Always return full metadata for tools endpoint
+app.get('/tools', validateApiKey, (req, res) => {
+  // Return full metadata for tools endpoint
   res.json({
-    tools: smitheryToolsMetadata || getBasicToolsMetadata(),
+    tools: getBasicToolsMetadata(),
     isPartial: true,
     supportsLazyLoading: true,
     lazyLoadingEnabled: true
@@ -52,7 +100,7 @@ app.get('/tools', (req, res) => {
 });
 
 // Tool details endpoint
-app.get('/tools/:name', (req, res) => {
+app.get('/tools/:name', validateApiKey, (req, res) => {
   const { name } = req.params;
   
   // Find the tool by name
@@ -77,7 +125,7 @@ app.get('/tools/:name', (req, res) => {
 | Sends event:endpoint => /message?sessionId=XYZ
 | Sends heartbeat every 10 seconds
 */
-app.get('/sse-cursor', (req, res) => {
+app.get('/sse-cursor', validateApiKey, (req, res) => {
   logger.info('[MCP] SSE => /sse-cursor connected');
   
   // SSE headers
@@ -87,7 +135,11 @@ app.get('/sse-cursor', (req, res) => {
   
   // Generate a sessionId
   const sessionId = uuidv4();
-  sessions.set(sessionId, { sseRes: res, initialized: false });
+  sessions.set(sessionId, { 
+    sseRes: res, 
+    initialized: false,
+    user: req.user
+  });
   logger.info('[MCP] Created sessionId:', sessionId);
   
   // event: endpoint => /message?sessionId=...
@@ -169,7 +221,7 @@ app.post('/message', (req, res) => {
         jsonrpc: '2.0',
         id: rpc.id, // Use the same ID to prevent "unknown ID" errors
         result: {
-          protocolVersion: '2023-07-01',
+          protocolVersion: '2025-03-26',
           capabilities: {
             tools: {
               listChanged: true,
@@ -185,9 +237,9 @@ app.post('/message', (req, res) => {
             logging: {}
           },
           serverInfo: {
-            name: 'WordPress MCP Server',
+            name: 'KumoCart WordPress MCP Server',
             version: '1.0.0',
-            description: 'MCP server for WordPress automation and management'
+            description: 'Cloud-powered WordPress browser automation, purr-fectly simple.'
           }
         }
       };
@@ -200,8 +252,8 @@ app.post('/message', (req, res) => {
     
     // -- tools/list
     case 'tools/list': {
-      // Use smitheryToolsMetadata for all requests to ensure Cursor compatibility
-      const toolsList = smitheryToolsMetadata;
+      // Get the tools metadata
+      const toolsList = wordpressToolsMetadata;
       
       const toolsMsg = {
         jsonrpc: '2.0',
@@ -257,6 +309,28 @@ app.post('/message', (req, res) => {
         sseRes.write(`data: ${JSON.stringify(errorMsg)}\n\n`);
         logger.error('[MCP] SSE => event: message => unknown tool call');
         return;
+      }
+      
+      // Check operation limits
+      if (sessionData.user && sessionData.user.operationsRemaining <= 0) {
+        const errorMsg = {
+          jsonrpc: '2.0',
+          id: rpc.id,
+          error: {
+            code: -32000,
+            message: 'Operation limit exceeded for your plan. Please upgrade your subscription.'
+          }
+        };
+        
+        sseRes.write(`event: message\n`);
+        sseRes.write(`data: ${JSON.stringify(errorMsg)}\n\n`);
+        logger.error('[MCP] SSE => event: message => operation limit exceeded');
+        return;
+      }
+      
+      // Decrement operations count
+      if (sessionData.user) {
+        sessionData.user.operationsRemaining--;
       }
       
       // Execute the tool (asynchronously)
@@ -324,52 +398,114 @@ app.post('/message', (req, res) => {
   }
 });
 
-// Add Smithery MCP endpoint to handle protocol requests
-// This maintains backward compatibility
-app.post('/mcp', async (req, res) => {
+// Standard MCP Protocol stream endpoint - per 2025-03-26 spec
+app.get('/stream', validateApiKey, (req, res) => {
+  // Set headers for SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  
+  logger.info('SSE connection established via GET - 2025-03-26 protocol compliant');
+  
+  // Generate a sessionId to track this connection
+  const sessionId = uuidv4();
+  sessions.set(sessionId, { 
+    sseRes: res, 
+    initialized: false,
+    protocol: '2025-03-26',
+    user: req.user
+  });
+  
+  // Send the session ID as a message
+  res.write(`event: info\n`);
+  res.write(`data: ${JSON.stringify({ sessionId })}\n\n`);
+  
+  // Heartbeat every 30 seconds
+  const hb = setInterval(() => {
+    res.write(`event: heartbeat\ndata: ${Date.now()}\n\n`);
+  }, 30000);
+  
+  // Handle client disconnect
+  req.on('close', () => {
+    clearInterval(hb);
+    sessions.delete(sessionId);
+    logger.info('SSE connection closed, sessionId=', sessionId);
+  });
+});
+
+// POST endpoint for handling JSON-RPC messages (2025-03-26 spec)
+app.post('/stream', validateApiKey, async (req, res) => {
   const message = req.body;
-  logger.info('Received POST request to /mcp', { messageId: message?.id, method: message?.method });
+  logger.info('Received POST request to /stream', { messageId: message?.id, method: message?.method });
   
   try {
-    // Handle initialize request
+    // Find the session for this client
+    // In the 2025-03-26 spec, we don't need a sessionId in the URL since we use cookies
+    // This is a simplified version without cookies
+    
+    // Find the most recent session for this user (based on API key)
+    let sessionId = null;
+    let sessionData = null;
+    
+    for (const [id, data] of sessions.entries()) {
+      if (data.user && data.user.apiKey === req.user.apiKey && data.protocol === '2025-03-26') {
+        sessionId = id;
+        sessionData = data;
+        break;
+      }
+    }
+    
+    if (!sessionId || !sessionData) {
+      return res.status(400).json({
+        jsonrpc: "2.0",
+        id: message?.id || null,
+        error: {
+          code: -32000,
+          message: "No active session found. Please establish an SSE connection first."
+        }
+      });
+    }
+    
+    // Process the message based on method
     if (message.method === 'initialize') {
-      logger.info('Processing initialize request', { id: message.id });
+      sessionData.initialized = true;
       
+      // Return initialization capabilities
       return res.json({
         jsonrpc: "2.0",
         id: message.id,
         result: {
-          protocolVersion: "2023-07-01",
+          protocolVersion: "2025-03-26",
           serverInfo: {
-            name: "WordPress MCP Server",
+            name: "KumoCart WordPress MCP Server",
             version: "1.0.0",
-            description: "MCP server for WordPress automation and management"
+            description: "Cloud-powered WordPress browser automation, purr-fectly simple."
           },
           capabilities: {
             tools: {
               supportsLazyLoading: true
+            },
+            resources: {
+              subscribe: true
+            },
+            prompts: {
+              listChanged: true
             }
           }
         }
       });
     } 
-    // Handle tools/list request
     else if (message.method === 'tools/list') {
-      logger.info('Processing tools/list request from Smithery', { id: message.id });
-      
-      // Simplified response format for Smithery compatibility
+      // Return the list of available tools
       return res.json({
         jsonrpc: "2.0",
         id: message.id,
         result: {
-          tools: smitheryToolsMetadata
+          tools: wordpressToolsMetadata
         }
       });
     }
-    // Handle tool schema requests
     else if (message.method === 'tools/getSchema') {
-      logger.info('Processing tools/getSchema request', { id: message.id, tool: message.params?.name });
-      
       if (!message.params?.name) {
         return res.status(400).json({
           jsonrpc: "2.0",
@@ -402,55 +538,75 @@ app.post('/mcp', async (req, res) => {
         }
       });
     }
-    // Handle tool call requests
-    else if (message.method === 'callTool') {
-      const { name, parameters } = message.params;
-      logger.info('Processing callTool request via /mcp', { id: message.id, tool: name });
+    else if (message.method === 'tools/call') {
+      const { name, arguments: toolArgs } = message.params || {};
       
+      if (!name) {
+        return res.status(400).json({
+          jsonrpc: "2.0",
+          id: message.id,
+          error: {
+            code: -32602,
+            message: "Missing tool name in request"
+          }
+        });
+      }
+      
+      // Find the tool in our WordPress tools
       const tool = wordpressTools[name];
+      
       if (!tool) {
-        logger.error(`Tool not found: ${name}`);
         return res.status(404).json({
           jsonrpc: "2.0",
           id: message.id,
           error: {
             code: -32601,
-            message: `Tool '${name}' not found`
+            message: `No such tool '${name}'`
           }
         });
       }
       
+      // Check operation limits
+      if (sessionData.user && sessionData.user.operationsRemaining <= 0) {
+        return res.status(429).json({
+          jsonrpc: "2.0",
+          id: message.id,
+          error: {
+            code: -32000,
+            message: 'Operation limit exceeded for your plan. Please upgrade your subscription.'
+          }
+        });
+      }
+      
+      // Decrement operations count
+      if (sessionData.user) {
+        sessionData.user.operationsRemaining--;
+      }
+      
       try {
-        // Execute the tool with the provided parameters
-        const result = await tool.execute(parameters);
+        // Execute the tool
+        const result = await tool.execute(toolArgs || {});
         
-        logger.info(`Tool execution complete: ${name}`, { success: result.success, id: message.id });
-        
-        // Send the response
         return res.json({
           jsonrpc: "2.0",
           id: message.id,
           result: {
-            result: result
+            result
           }
         });
       } catch (error) {
-        logger.error(`Error executing tool ${name}:`, { error: error.message, id: message.id });
-        
         return res.status(500).json({
           jsonrpc: "2.0",
           id: message.id,
           error: {
             code: -32000,
-            message: error.message,
-            data: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            message: error.message || 'Error executing tool'
           }
         });
       }
-    } else {
+    } 
+    else {
       // Handle unsupported methods
-      logger.warn(`Unsupported method: ${message.method}`, { id: message.id });
-      
       return res.status(400).json({
         jsonrpc: "2.0",
         id: message.id,
@@ -461,7 +617,7 @@ app.post('/mcp', async (req, res) => {
       });
     }
   } catch (error) {
-    logger.error('Error processing /mcp request', { error: error.message, stack: error.stack });
+    logger.error('Error processing /stream request', { error: error.message, stack: error.stack });
     
     return res.status(500).json({
       jsonrpc: "2.0",
@@ -469,322 +625,41 @@ app.post('/mcp', async (req, res) => {
       error: {
         code: -32603,
         message: "Internal server error",
-        data: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        data: error.message
       }
     });
   }
 });
 
-// REVISED MCP Protocol Implementation
-// GET endpoint for establishing SSE connection
-app.get('/stream', (req, res) => {
-  // Set headers for SSE
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  
-  logger.info('SSE connection established via GET - protocol compliant, waiting for client POST');
-  
-  // Keep the connection open but don't send anything yet
-  // Client should POST its initialize request separately
-  
-  // Handle client disconnect
-  req.on('close', () => {
-    logger.info('SSE connection closed');
+// API key management endpoint - for testing during development
+if (process.env.NODE_ENV !== 'production') {
+  app.post('/dev/generate-api-key', (req, res) => {
+    const { label } = req.body || {};
+    
+    // Generate a new API key
+    const keyId = uuidv4().replace(/-/g, '').substring(0, 24);
+    const apiKey = `kc_live_${keyId}`;
+    
+    res.json({
+      success: true,
+      apiKey,
+      label: label || 'Development Key',
+      message: 'This key is for development purposes only. In production, keys will be managed through the KumoCart dashboard.'
+    });
   });
-});
+}
 
-// POST endpoint for handling JSON-RPC messages
-app.post('/stream', async (req, res) => {
-  const message = req.body;
-  logger.info('Received POST request to /stream', { messageId: message?.id, method: message?.method });
+// Start the server
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  logger.info(`KumoCart MCP Server running on port ${PORT}`);
   
-  try {
-    // Regular JSON response (no streaming)
-    if (message.method === 'initialize') {
-      logger.info('Processing initialize request', { id: message.id });
-      
-      // Send initialize response
-      res.json({
-        jsonrpc: "2.0",
-        id: message.id,
-        result: {
-          protocolVersion: "2023-07-01",
-          serverInfo: {
-            name: "WordPress MCP Server",
-            version: "1.0.0",
-            description: "MCP server for WordPress automation and management"
-          },
-          capabilities: {
-            tools: {
-              supportsLazyLoading: true
-            }
-          }
-        }
-      });
-      
-      logger.info('Sent initialize response', { id: message.id });
-    } 
-    else if (message.method === 'tools/list') {
-      // Handle tools list request with lazy loading
-      logger.info('Processing tools/list request', { id: message.id });
-      
-      if (IS_SMITHERY || (req.headers['user-agent'] && req.headers['user-agent'].includes('smithery'))) {
-        logger.info('Smithery scan detected - returning minimal metadata for fast scanning');
-        return res.json({
-          jsonrpc: "2.0",
-          id: message.id,
-          result: {
-            tools: smitheryToolsMetadata
-          }
-        });
-      }
-      
-      // Only send basic metadata (names and descriptions) for quick response
-      res.json({
-        jsonrpc: "2.0",
-        id: message.id,
-        result: {
-          tools: getBasicToolsMetadata()
-        }
-      });
-      
-      logger.info('Sent tools list response with basic metadata', { id: message.id });
-    }
-    // Add a new endpoint for getting detailed tool schema - on demand
-    else if (message.method === 'tools/getSchema') {
-      logger.info('Processing tools/getSchema request', { id: message.id, tool: message.params?.name });
-      
-      if (!message.params?.name) {
-        return res.status(400).json({
-          jsonrpc: "2.0",
-          id: message.id,
-          error: {
-            code: -32602,
-            message: "Invalid params: tool name required"
-          }
-        });
-      }
-      
-      const toolSchema = getFullToolMetadata(message.params.name);
-      
-      if (!toolSchema) {
-        return res.status(404).json({
-          jsonrpc: "2.0",
-          id: message.id,
-          error: {
-            code: -32601,
-            message: `Tool '${message.params.name}' not found`
-          }
-        });
-      }
-      
-      res.json({
-        jsonrpc: "2.0",
-        id: message.id,
-        result: {
-          schema: toolSchema
-        }
-      });
-      
-      logger.info('Sent tool schema', { id: message.id, tool: message.params.name });
-    }
-    else if (message.method === 'callTool') {
-      // Process tool call
-      const { name, parameters } = message.params;
-      logger.info('Processing callTool request', { id: message.id, tool: name });
-      
-      const tool = wordpressTools[name];
-      if (!tool) {
-        logger.error(`Tool not found: ${name}`);
-        return res.status(404).json({
-          jsonrpc: "2.0",
-          id: message.id,
-          error: {
-            code: -32601,
-            message: `Tool '${name}' not found`
-          }
-        });
-      }
-      
-      try {
-        // Execute the tool with the provided parameters
-        const result = await tool.execute(parameters);
-        
-        logger.info(`Tool execution complete: ${name}`, { success: result.success, id: message.id });
-        
-        // Send the response
-        res.json({
-          jsonrpc: "2.0",
-          id: message.id,
-          result: {
-            result: result
-          }
-        });
-      } catch (error) {
-        logger.error(`Error executing tool ${name}:`, { error: error.message, id: message.id });
-        
-        res.status(500).json({
-          jsonrpc: "2.0",
-          id: message.id,
-          error: {
-            code: -32000,
-            message: error.message,
-            data: process.env.NODE_ENV === 'development' ? error.stack : undefined
-          }
-        });
-      }
+  if (process.env.NODE_ENV !== 'production') {
+    logger.info('Development mode active');
+    if (!config.auth.requireApiKey) {
+      logger.warn('API key validation is DISABLED. Enable it by setting REQUIRE_API_KEY=true in .env');
     } else {
-      // Handle unsupported methods
-      logger.warn(`Unsupported method: ${message.method}`, { id: message.id });
-      
-      res.status(400).json({
-        jsonrpc: "2.0",
-        id: message.id,
-        error: {
-          code: -32601,
-          message: `Method '${message.method}' not supported`
-        }
-      });
+      logger.info('API key validation is enabled. Use the /dev/generate-api-key endpoint to create a test key.');
     }
-  } catch (error) {
-    logger.error('Error processing request', { error: error.message, stack: error.stack });
-    
-    res.status(500).json({
-      jsonrpc: "2.0",
-      id: message?.id || null,
-      error: {
-        code: -32603,
-        message: "Internal server error",
-        data: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      }
-    });
   }
-});
-
-// Legacy tool invocation endpoint - still supported
-app.post('/tools/:toolName', async (req, res) => {
-  const { toolName } = req.params;
-  const params = req.body;
-  
-  logger.info(`Tool execution request: ${toolName}`, { params });
-  
-  // Check if tool exists
-  const tool = wordpressTools[toolName];
-  if (!tool) {
-    logger.error(`Tool not found: ${toolName}`);
-    return res.status(404).json({
-      success: false,
-      error: `Tool '${toolName}' not found`
-    });
-  }
-  
-  try {
-    // Execute the tool with the provided parameters
-    const result = await tool.execute(params);
-    
-    logger.info(`Tool execution complete: ${toolName}`, {
-      success: result.success,
-      params
-    });
-    
-    res.json(result);
-  } catch (error) {
-    logger.error(`Error executing tool ${toolName}:`, {
-      error: error.message,
-      stack: error.stack,
-      params
-    });
-    
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-  }
-});
-
-// Start the server on all interfaces
-const PORT = config.server.port;
-app.listen(PORT, '0.0.0.0', () => {
-  logger.info(`WordPress MCP Server running on port ${PORT}, listening on all interfaces`);
-  logger.info(`Environment: ${config.server.environment}`);
-  logger.info(`WordPress site: ${config.wordpress.siteUrl}`);
-  
-  if (!config.wordpress.username || !config.wordpress.appPassword) {
-    logger.warn('WordPress credentials not configured. Tool execution may fail.');
-  }
-});
-
-// Initialize connection manager
-const connectionManager = require('./api/connection-manager');
-
-// Log connection pool status
-logger.info('Connection pool initialized', connectionManager.getStats());
-
-// Set up periodic cleanup of idle connections to prevent "max client connections" errors
-// Clean up idle connections based on configured interval
-const cleanupIntervalMs = config.connections.cleanupIntervalMs;
-const maxIdleTimeMs = config.connections.connectionTimeout * 3; // 3x the connection timeout
-
-logger.info(`Setting up connection cleanup every ${cleanupIntervalMs/1000} seconds, max idle time: ${maxIdleTimeMs/1000} seconds`);
-
-const connectionCleanupInterval = setInterval(async () => {
-  try {
-    const closedCount = await connectionManager.cleanupIdleConnections(maxIdleTimeMs);
-    if (closedCount > 0) {
-      logger.info(`Periodic cleanup closed ${closedCount} idle connections`, connectionManager.getStats());
-    }
-  } catch (error) {
-    logger.error('Error during periodic connection cleanup:', { error: error.message });
-  }
-}, cleanupIntervalMs);
-
-// Make sure the interval doesn't keep the process alive
-connectionCleanupInterval.unref();
-
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled Promise Rejection:', { reason });
-});
-
-// Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
-  logger.error('Uncaught Exception:', { error: error.message, stack: error.stack });
-  // Give logger a chance to flush before exiting
-  setTimeout(() => process.exit(1), 1000);
-});
-
-// Handle graceful shutdown
-process.on('SIGINT', async () => {
-  logger.info('Received SIGINT, shutting down gracefully...');
-  
-  try {
-    // Close all browser connections
-    await connectionManager.closeAllBrowsers();
-    logger.info('All browser connections closed');
-  } catch (error) {
-    logger.error('Error closing browser connections:', { error: error.message });
-  }
-  
-  // Exit process
-  setTimeout(() => process.exit(0), 1000);
-});
-
-process.on('SIGTERM', async () => {
-  logger.info('Received SIGTERM, shutting down gracefully...');
-  
-  try {
-    // Close all browser connections
-    await connectionManager.closeAllBrowsers();
-    logger.info('All browser connections closed');
-  } catch (error) {
-    logger.error('Error closing browser connections:', { error: error.message });
-  }
-  
-  // Exit process
-  setTimeout(() => process.exit(0), 1000);
 }); 
-
-// Export for testing
-module.exports = app; 

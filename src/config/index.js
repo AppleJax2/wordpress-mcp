@@ -1,5 +1,5 @@
 /**
- * Configuration loader for WordPress MCP Server
+ * Configuration loader for KumoCart MCP Server
  */
 require('dotenv').config();
 const defaultConfig = require('./default');
@@ -23,10 +23,14 @@ if (!wordpress.username || !wordpress.appPassword) {
   console.warn('WARNING: WordPress credentials are not configured');
 }
 
-// Log connection limits for Smithery compatibility
-console.info(`Connection limits: API=${connections.maxApiConnections}, Browser=${connections.maxBrowserConnections}`);
-if (connections.maxApiConnections > 3 || connections.maxBrowserConnections > 1) {
-  console.warn('WARNING: Connection limits may be too high for Smithery. Consider reducing MAX_API_CONNECTIONS and MAX_BROWSER_CONNECTIONS in .env');
+// Log API authentication status
+if (config.auth.requireApiKey) {
+  console.info('API Key authentication is ENABLED');
+} else {
+  console.warn('WARNING: API Key authentication is DISABLED. Enable it in production with REQUIRE_API_KEY=true');
 }
+
+// Log connection limits
+console.info(`Connection limits: API=${connections.maxApiConnections}, Browser=${connections.maxBrowserConnections}`);
 
 module.exports = config; 

@@ -1,5 +1,5 @@
 /**
- * Default configuration for WordPress MCP Server
+ * Default configuration for KumoCart MCP Server
  */
 module.exports = {
   // WordPress Site Configuration
@@ -32,6 +32,50 @@ module.exports = {
     maxBrowserConnections: parseInt(process.env.MAX_BROWSER_CONNECTIONS || '1', 10),
     connectionTimeout: parseInt(process.env.CONNECTION_TIMEOUT || '10000', 10),
     cleanupIntervalMs: parseInt(process.env.CLEANUP_INTERVAL_MS || '120000', 10) // 2 minutes default
+  },
+  
+  // API Authentication Configuration
+  auth: {
+    requireApiKey: process.env.REQUIRE_API_KEY === 'true',
+    apiKeyCacheTtl: parseInt(process.env.API_KEY_CACHE_TTL || '300000', 10), // 5 minutes in ms
+  },
+  
+  // Rate Limiting Configuration
+  rateLimit: {
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10), // 1 minute in ms
+    maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '60', 10), // 60 requests per minute
+  },
+  
+  // Subscription Plans
+  plans: {
+    freeKitten: {
+      name: 'Free Kitten',
+      monthlyPrice: 0,
+      monthlyOperations: 100,
+      concurrentJobs: 1,
+      dataRetentionDays: 7
+    },
+    starterCat: {
+      name: 'Starter Cat',
+      monthlyPrice: 29,
+      monthlyOperations: 2000,
+      concurrentJobs: 2,
+      dataRetentionDays: 30
+    },
+    proLynx: {
+      name: 'Pro Lynx',
+      monthlyPrice: 99,
+      monthlyOperations: 10000,
+      concurrentJobs: 5,
+      dataRetentionDays: 90
+    },
+    enterprisePanther: {
+      name: 'Enterprise Panther',
+      monthlyPrice: null, // Custom pricing
+      monthlyOperations: null, // Custom limit
+      concurrentJobs: null, // Custom limit
+      dataRetentionDays: null // Custom retention
+    }
   },
   
   // Logging Configuration

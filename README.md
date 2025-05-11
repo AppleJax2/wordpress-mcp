@@ -1,6 +1,6 @@
-# WordPress and Divi Theme Builder MCP Server
+# KumoCart - WordPress Browser Automation
 
-A specialized Model Context Protocol (MCP) server for WordPress and Divi theme builder automation. This server provides tools for AI agents to create, manage, and customize WordPress websites with a focus on the Divi theme builder.
+A specialized Model Context Protocol (MCP) server for WordPress browser automation. KumoCart provides tools for AI agents to create, manage, and customize WordPress websites with a focus on the Divi theme builder.
 
 ## Features
 
@@ -21,7 +21,7 @@ A specialized Model Context Protocol (MCP) server for WordPress and Divi theme b
 
 ## MCP Protocol Implementation
 
-This server implements the Machine Conversation Protocol (MCP) with Server-Sent Events (SSE) for streaming responses, following the MCP protocol flow:
+KumoCart implements the Model Context Protocol (MCP) with Server-Sent Events (SSE) for streaming responses, following the MCP protocol flow:
 
 1. Client connects to `/sse-cursor` to establish an SSE connection
 2. Server responds with an event containing the message endpoint: `/message?sessionId=<UUID>`
@@ -78,7 +78,7 @@ This implementation is compatible with standard MCP protocol clients like Claude
 
 ### 1. Create a KumoCart Account
 
-To use our WordPress MCP tools, first create an account:
+To use our WordPress automation tools, first create an account:
 
 1. Visit [KumoCart.com](https://kumocart.com) and sign up
 2. Choose a subscription plan that fits your needs
@@ -117,13 +117,13 @@ Once your WordPress site is configured:
 
 ### 4. Connect to Claude Desktop
 
-To use our WordPress MCP tools in Claude Desktop:
+To use our WordPress automation tools in Claude Desktop:
 
 1. Open Claude Desktop application
 2. Go to Settings > Extensions
 3. Click "Add Model Context Protocol Server"
 4. Enter the following details:
-   - Name: WordPress MCP
+   - Name: KumoCart WordPress MCP
    - URL: `https://wordpress-mcp.onrender.com/sse-cursor`
    - API Key: Your KumoCart API key
 5. Click "Save"
@@ -132,7 +132,7 @@ Once configured, you can access WordPress automation tools by asking Claude to p
 
 ### 5. Connect to Cursor IDE
 
-To add our WordPress MCP tools to Cursor:
+To add our WordPress automation tools to Cursor:
 
 1. Open Cursor IDE
 2. Go to Settings > MCP Configuration
@@ -141,7 +141,7 @@ To add our WordPress MCP tools to Cursor:
 ```json
 {
   "mcpServers": {
-    "wordpress-mcp": {
+    "kumocart-wordpress": {
       "url": "https://wordpress-mcp.onrender.com/sse-cursor",
       "apiKey": "YOUR_API_KEY"
     }
@@ -173,11 +173,11 @@ Your KumoCart dashboard provides several API key management features:
 
 ## Usage Guide
 
-Our WordPress MCP server provides powerful tools that can be utilized through AI agents in Claude Desktop or Cursor IDE. Simply describe what you want to accomplish with your WordPress site, and the AI will use our tools to perform these actions based on your natural language requests.
+Our WordPress automation services provide powerful tools that can be utilized through AI agents in Claude Desktop or Cursor IDE. Simply describe what you want to accomplish with your WordPress site, and the AI will use our tools to perform these actions based on your natural language requests.
 
 ## Example User Journeys
 
-Below are example user journeys demonstrating how our WordPress MCP server can automate website development through AI agent interactions.
+Below are example user journeys demonstrating how KumoCart can automate website development through AI agent interactions.
 
 ### 1. Business Website Creation with Divi
 
@@ -311,90 +311,6 @@ AI Agent: "Your site has been fully optimized for SEO. I've fixed all meta descr
 
 **Value Delivered:** A thorough SEO audit and optimization that would typically require an SEO specialist, improving search engine visibility and addressing critical content issues.
 
-### 5. User Journey Mapping and Navigation Optimization
-
-**User Goal:** Improve website conversion rates by optimizing user flow and navigation for a specific conversion goal.
-
-**Example Interaction:**
-
-```
-User: "Users aren't making it to my consultation booking page. Can you analyze the user journey and fix the navigation to improve conversion rates?"
-
-AI Agent: "I'll analyze your user journey and optimize the navigation to improve conversions to your consultation booking page. Let me first map the current user journeys."
-
-[Agent uses wordpress_user_journey_mapper to analyze current user flows]
-[Agent uses wordpress_authenticated_user_analyzer to check logged-in user behavior]
-[Agent uses wordpress_navigation_optimizer to identify navigation bottlenecks]
-
-AI Agent: "I've analyzed the user journeys and found several issues: Users are getting stuck on the services page, the consultation CTA isn't prominent enough, mobile navigation is confusing, and there are too many steps to reach the booking page. I'll implement fixes for these issues."
-
-[Agent uses wordpress_menu_manager to streamline navigation structure]
-[Agent uses wordpress_content_manager to add direct CTAs to the services page]
-[Agent uses wordpress_theme_customizer to improve mobile navigation]
-[Agent uses wordpress_divi_builder to create a more prominent booking button]
-
-AI Agent: "I've optimized your user journey. The main changes include: streamlined navigation with fewer dropdown levels, added direct consultation CTAs on every service description, improved mobile navigation with a sticky booking button, and reduced the steps to booking from 4 to 2. These changes should significantly improve your conversion rate."
-```
-
-**Value Delivered:** Professional-level user experience optimization that identifies and removes conversion blockers, potentially increasing business leads and revenue.
-
-### 6. Visual Design Analysis and Enhancement
-
-**User Goal:** Improve the visual consistency and professionalism of an existing website.
-
-**Example Interaction:**
-
-```
-User: "My website looks inconsistent and unprofessional. Can you analyze the design and improve it?"
-
-AI Agent: "I'll analyze your website design and make improvements for visual consistency and professionalism. Let me first run a design analysis."
-
-[Agent uses wordpress_design_analyzer to evaluate current design]
-[Agent uses wordpress_theme_customizer to check current theme settings]
-
-AI Agent: "I've analyzed your site design and found several issues: inconsistent color usage across pages, too many font styles (5 different fonts), inconsistent button styles, poor spacing on mobile devices, and low-quality images on some pages. I'll systematically address these issues."
-
-[Agent uses wordpress_theme_customizer to create a consistent color palette]
-[Agent uses wordpress_theme_customizer to standardize typography to 2 fonts]
-[Agent uses wordpress_theme_customizer to create consistent button styles]
-[Agent uses wordpress_divi_builder to fix spacing issues across devices]
-[Agent uses wordpress_media_manager to replace low-quality images]
-
-AI Agent: "I've completed the design improvements. Your site now has: a consistent color palette applied across all pages, standardized typography with just 2 complementary fonts, uniform button styles throughout the site, proper spacing on all device sizes, and high-quality images. The overall appearance is much more professional and cohesive."
-```
-
-**Value Delivered:** Professional design optimization that creates a more credible, trustworthy brand impression for visitors without requiring a full redesign.
-
-### 7. Automated Form Creation and Analysis
-
-**User Goal:** Create effective lead generation forms and optimize their conversion rates.
-
-**Example Interaction:**
-
-```
-User: "I need to create lead generation forms for my business services and make sure they convert well."
-
-AI Agent: "I'll help you create high-converting lead generation forms for your business services. First, let me check what form solutions you have available."
-
-[Agent uses wordpress_plugin_manager to check for or install a forms plugin]
-[Agent uses wordpress_form_analysis to study best practices for your industry]
-
-AI Agent: "I'll create three optimized forms: a short contact form, a detailed consultation request form, and a newsletter signup form."
-
-[Agent uses wordpress_form_analysis to create the three form types]
-[Agent uses wordpress_divi_builder to place forms strategically across the site]
-[Agent uses wordpress_content_manager to create dedicated landing pages for each form]
-
-AI Agent: "Now I'll set up tracking to monitor form performance and make improvements."
-
-[Agent uses wordpress_form_analysis to configure conversion tracking]
-[Agent uses wordpress_form_analysis to set up A/B testing between two form variants]
-
-AI Agent: "Your lead generation forms are complete and optimized. I've created three different forms, each designed for different stages of the customer journey. The forms are placed strategically across your site, including dedicated landing pages. I've also set up conversion tracking and A/B testing so you can see which form performs better. After a week of data collection, we can further optimize the forms based on the results."
-```
-
-**Value Delivered:** Professional lead generation system with strategic form placement, conversion tracking, and continuous improvement through A/B testing, driving more business opportunities.
-
 ## Getting Support
 
 If you encounter any issues or have questions about our services:
@@ -416,7 +332,7 @@ For developers who want to test the MCP protocol implementation directly:
 3. Send a JSON-RPC request to the message endpoint:
 
 ```bash
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_API_KEY" -d '{"jsonrpc":"2.0","id":"1","method":"initialize"}' https://wordpress-mcp.onrender.com/message?sessionId=YOUR_SESSION_ID
+curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer kc_live_YOUR_API_KEY" -d '{"jsonrpc":"2.0","id":"1","method":"initialize"}' https://wordpress-mcp.onrender.com/message?sessionId=YOUR_SESSION_ID
 ```
 
 4. You should receive a minimal HTTP acknowledgment and see the actual response in the SSE stream 
