@@ -57,9 +57,57 @@ A specialized Model Context Protocol (MCP) server for WordPress and Divi theme b
 - **wordpress_authenticated_user_analyzer**: Analyze user behavior patterns
 - **wordpress_form_analysis**: Create and optimize forms
 
+## Installation and Setup
+
+### Installing in Claude Desktop
+
+To use our WordPress MCP tools in Claude Desktop:
+
+1. Open Claude Desktop application
+2. Go to Settings > Extensions
+3. Click "Add Model Context Protocol Server"
+4. Enter the following details:
+   - Name: WordPress MCP
+   - URL: `https://wordpress-mcp.anthrotools.dev/mcp`
+   - API Key: (Contact us for your API key)
+5. Click "Save"
+
+Once configured, you can access WordPress automation tools by asking Claude to perform WordPress and Divi tasks.
+
+### Installing in Cursor IDE
+
+To add our WordPress MCP tools to Cursor:
+
+1. Open Cursor IDE
+2. Go to Settings > MCP Configuration
+3. Add the following to your MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "wordpress-mcp": {
+      "command": "npx",
+      "args": [
+        "@anthrotools/mcp-client",
+        "connect",
+        "--url",
+        "https://wordpress-mcp.anthrotools.dev/mcp",
+        "--key",
+        "YOUR_API_KEY"
+      ]
+    }
+  }
+}
+```
+
+4. Replace `YOUR_API_KEY` with the key provided to you
+5. Restart Cursor
+
+Now you can ask the Cursor AI assistant to perform WordPress and Divi automation tasks.
+
 ## Usage Guide
 
-Our WordPress MCP server provides a powerful set of tools that can be utilized through AI agents. When integrated with models like Claude or GPT, these tools enable your AI assistant to perform complex WordPress site management and design tasks based on simple natural language requests.
+Our WordPress MCP server provides powerful tools that can be utilized through AI agents in Claude Desktop or Cursor IDE. Simply describe what you want to accomplish with your WordPress site, and the AI will use our tools to perform these actions based on your natural language requests.
 
 ## Example User Journeys
 
@@ -281,9 +329,9 @@ AI Agent: "Your lead generation forms are complete and optimized. I've created t
 
 **Value Delivered:** Professional lead generation system with strategic form placement, conversion tracking, and continuous improvement through A/B testing, driving more business opportunities.
 
-## Accessing Our WordPress MCP Tools
+## Getting Access
 
-Interested in using our WordPress and Divi automation tools? Contact us for information about accessing our MCP server and integrating it with your AI agents and workflows.
+To get access to our WordPress MCP tools, visit [anthrotools.dev/wordpress-mcp](https://anthrotools.dev/wordpress-mcp) or contact our sales team at sales@anthrotools.dev.
 
 ## License
 
