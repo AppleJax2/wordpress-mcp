@@ -27,6 +27,9 @@ export REQUIRE_API_KEY=${REQUIRE_API_KEY:-false}
 export RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-60000}
 export RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-60}
 
+# MCP Protocol version
+export MCP_PROTOCOL_VERSION=${MCP_PROTOCOL_VERSION:-2025-03-26}
+
 echo "Starting Tanuki MCP Server"
 echo "Environment: NODE_ENV=$NODE_ENV"
 echo "Port: $PORT"
@@ -37,6 +40,7 @@ echo "Browser Connections: $MAX_BROWSER_CONNECTIONS"
 echo "API Key Auth: $REQUIRE_API_KEY"
 echo "Rate Limit Window: $RATE_LIMIT_WINDOW_MS ms"
 echo "Rate Limit Requests: $RATE_LIMIT_MAX_REQUESTS"
+echo "MCP Protocol Version: $MCP_PROTOCOL_VERSION"
 
 # Check for override file and use it
 if [ -f "/app/.env.override" ]; then

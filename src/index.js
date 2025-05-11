@@ -230,7 +230,7 @@ app.post('/message', (req, res) => {
         jsonrpc: '2.0',
         id: rpc.id, // Use the same ID to prevent "unknown ID" errors
         result: {
-          protocolVersion: '2025-03-26',
+          protocolVersion: process.env.MCP_PROTOCOL_VERSION || '2025-03-26',
           capabilities: {
             tools: {
               listChanged: true,
@@ -484,7 +484,7 @@ app.post('/stream', validateApiKey, async (req, res) => {
         jsonrpc: "2.0",
         id: message.id,
         result: {
-          protocolVersion: "2025-03-26",
+          protocolVersion: process.env.MCP_PROTOCOL_VERSION || "2025-03-26",
           serverInfo: {
             name: "Tanuki WordPress MCP Server",
             version: "1.0.0",
