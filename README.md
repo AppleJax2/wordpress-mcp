@@ -36,6 +36,60 @@ Supported JSON-RPC methods:
 
 This implementation is compatible with both the standard MCP protocol and Smithery's remote execution environments.
 
+## Connecting to the Smithery-Hosted Server
+
+This MCP server is hosted remotely at https://wordpress-mcp.onrender.com and available through Smithery.
+
+### Connect via Smithery CLI
+
+To connect to the hosted server using the Smithery CLI:
+
+```bash
+npx @smithery/cli connect http --url https://wordpress-mcp.onrender.com/mcp
+```
+
+### Connect from Claude Desktop
+
+Add the following configuration to your Claude Desktop settings:
+
+```json
+{
+  "mcpServers": {
+    "wordpress-mcp": {
+      "command": "npx",
+      "args": [
+        "@smithery/cli@latest",
+        "connect",
+        "http",
+        "--url",
+        "https://wordpress-mcp.onrender.com/mcp"
+      ]
+    }
+  }
+}
+```
+
+### Connect Using Native MCP Protocol
+
+For clients supporting the native MCP protocol with SSE, use:
+
+```json
+{
+  "mcpServers": {
+    "wordpress-mcp-sse": {
+      "command": "npx",
+      "args": [
+        "@smithery/cli@latest",
+        "connect",
+        "http",
+        "--url",
+        "https://wordpress-mcp.onrender.com/sse-cursor"
+      ]
+    }
+  }
+}
+```
+
 ## Tools Available
 
 ### WordPress Core
@@ -85,8 +139,7 @@ To use our WordPress MCP tools in Claude Desktop:
 3. Click "Add Model Context Protocol Server"
 4. Enter the following details:
    - Name: WordPress MCP
-   - URL: `https://wordpress-mcp.smithery.ai/AppleJax2/wordpress-mcp`
-   - API Key: (Contact us for your API key)
+   - URL: `https://wordpress-mcp.onrender.com/mcp`
 5. Click "Save"
 
 Once configured, you can access WordPress automation tools by asking Claude to perform WordPress and Divi tasks.
@@ -109,9 +162,7 @@ To add our WordPress MCP tools to Cursor:
         "connect",
         "http",
         "--url",
-        "https://wordpress-mcp.smithery.ai/AppleJax2/wordpress-mcp",
-        "--key",
-        "YOUR_API_KEY"
+        "https://wordpress-mcp.onrender.com/mcp"
       ]
     }
   }
