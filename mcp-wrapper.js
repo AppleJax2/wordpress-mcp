@@ -3,8 +3,6 @@
  * 
  * This script implements the MCP stdio transport protocol, bridging between
  * Cursor's stdio expectations and our HTTP server.
- * 
- * It also supports Smithery integration for local installation.
  */
 
 const readline = require('readline');
@@ -31,7 +29,20 @@ if (process.env.RENDER) {
 }
 const url = baseUrl;
 
-const { smitheryToolsMetadata } = require(path.join(__dirname, 'src', 'tools', 'index.js'));
+// Force Smithery mode to false
+const IS_SMITHERY = false;
+
+// Print startup information
+console.error(`Starting MCP wrapper for WordPress MCP Server`);
+console.error(`Target URL: ${url}`);
+console.error(`Node version: ${process.version}`);
+console.error(`Debug mode: ${DEBUG ? 'enabled' : 'disabled'}`);
+
+// Add port check before starting server
+// Check if we're running in a deployment where HTTP server is already running
+if (process.env.RENDER) {
+  debug('Running on Render.com - assuming HTTP server is managed externally');
+}
 
 // Create an HTTP agent to enable connection reuse with better configuration
 const httpAgent = new http.Agent({ 
@@ -47,63 +58,6 @@ const httpsAgent = new https.Agent({
   keepAliveMsecs: 3000,
   timeout: 10000
 });
-
-// Check for Smithery environment
-const IS_SMITHERY = process.env.SMITHERY === 'true';
-debug(`Running in ${IS_SMITHERY ? 'Smithery' : 'standard'} mode`);
-
-// Print startup information
-console.error(`Starting MCP wrapper for WordPress MCP Server (${IS_SMITHERY ? 'Smithery' : 'standard'} mode)`);
-console.error(`Target URL: ${url}`);
-console.error(`Node version: ${process.version}`);
-console.error(`Debug mode: ${DEBUG ? 'enabled' : 'disabled'}`);
-
-// Add port check before starting server
-// Check if we're running in a deployment where HTTP server is already running
-if (process.env.RENDER) {
-  debug('Running on Render.com - assuming HTTP server is managed externally');
-}
-
-// Minimal tools list for ultra-fast Smithery response
-const minimalToolsList = smitheryToolsMetadata;
-
-// Immediately return a tools notification to signal readiness
-debug('Sending initial tools notification');
-const startupNotification = {
-  jsonrpc: "2.0",
-  id: "1",
-  result: {
-    protocolVersion: "2023-07-01",
-    serverInfo: {
-      name: "WordPress MCP Server",
-      version: "1.0.0",
-      description: "MCP server for WordPress automation and management"
-    },
-    tools: minimalToolsList,
-    capabilities: {
-      tools: {
-        supportsLazyLoading: true
-      }
-    }
-  }
-};
-
-// Print immediately so Cursor has something to initialize with
-if (IS_SMITHERY) {
-  console.log(JSON.stringify(startupNotification));
-}
-
-// Send a simplified static tool list immediately in Smithery mode
-if (IS_SMITHERY) {
-  debug('Sending static tools list for Smithery compatibility');
-  const simpleTools = minimalToolsList; // Use all available tools from smitheryToolsMetadata
-  const quickToolsNotification = {
-    jsonrpc: "2.0",
-    method: "tools/refresh",
-    params: { tools: simpleTools, isPartial: true, supportsLazyLoading: true }
-  };
-  console.log(JSON.stringify(quickToolsNotification));
-}
 
 // Retry configuration with exponential backoff
 const MAX_RETRIES = 5;
@@ -159,11 +113,6 @@ async function fetchWithRetry(url, options = {}, retries = MAX_RETRIES) {
       
       // Add timeout if not specified
       options.timeout = options.timeout || 10000; // 10 second timeout
-      
-      // Add Smithery marker if in Smithery mode
-      if (IS_SMITHERY && options.headers) {
-        options.headers['User-Agent'] = (options.headers['User-Agent'] || '') + ' smithery';
-      }
       
       const response = await fetch(url, options);
       
@@ -279,7 +228,7 @@ rl.on('line', async (line) => {
                     }
                   }
                 }));
-                
+      
                 // Continue monitoring the SSE stream for tool notifications
                 break;
               }
@@ -287,7 +236,7 @@ rl.on('line', async (line) => {
               try {
                 const message = JSON.parse(data);
                 debug('Received message:', message);
-                
+        
                 // Forward message to Cursor
                 console.log(JSON.stringify(message));
               } catch (e) {
@@ -404,24 +353,14 @@ process.on('SIGTERM', () => {
 
 // Try to connect to the server and fetch tool metadata in the background with better error handling
 (async () => {
-  // In Smithery mode, we've already sent a minimal tools list, no need for immediate connection
-  if (IS_SMITHERY) {
-    debug('Smithery mode: Skipping immediate server connection check');
-    // Start server in the background but don't block on it
-    setTimeout(async () => {
-      try {
-        debug('Checking server status in the background...');
-        await fetch(`${url}`, { timeout: 5000 });
-        debug('Server is running in the background');
-      } catch (error) {
-        debug(`Background server check failed: ${error.message}`);
-        // Try to start the server if needed
-        if (!process.env.RENDER) {
-          startServerForSmithery();
-        }
-      }
-    }, 100);
-    return;
+  debug('Checking server status in the background...');
+  
+  // Check if server is running
+  try {
+    await fetch(`${url}`, { timeout: 5000 });
+    debug('Server is running in the background');
+  } catch (error) {
+    debug(`Background server check failed: ${error.message}`);
   }
   
   let retries = MAX_RETRIES;
@@ -488,88 +427,5 @@ process.on('SIGTERM', () => {
   if (!success) {
     debug('Failed to connect to the server after multiple retries.');
     console.error('[ERROR] Failed to connect to the HTTP server after multiple retries.');
-    
-    if (IS_SMITHERY && !process.env.RENDER) {
-      startServerForSmithery();
-    }
   }
 })();
-
-// Helper function to start server for Smithery
-async function startServerForSmithery() {
-  debug('Starting server automatically for Smithery integration...');
-  // Start the server automatically when running under Smithery
-  try {
-    const { spawn } = require('child_process');
-    console.error('[INFO] Attempting to start HTTP server in Smithery mode...');
-    
-    const server = spawn('node', ['src/index.js'], {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      detached: false,
-      env: {
-        ...process.env,
-        SMITHERY: 'true'
-      }
-    });
-    
-    server.stdout.on('data', (data) => {
-      console.error(`[SERVER] ${data.toString().trim()}`);
-    });
-    
-    server.stderr.on('data', (data) => {
-      console.error(`[SERVER-ERR] ${data.toString().trim()}`);
-    });
-    
-    server.on('error', (err) => {
-      console.error(`[ERROR] Failed to start server: ${err.message}`);
-    });
-    
-    // Wait a bit for the server to start
-    console.error('[INFO] Waiting for server to start...');
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    
-    // Try to connect to the server again
-    let retries = 2;
-    while (retries > 0) {
-      try {
-        const response = await fetch(`${url}`, { timeout: 5000 });
-        if (response.ok) {
-          console.error('[INFO] Server started successfully');
-          break;
-        }
-      } catch (error) {
-        console.error(`[ERROR] Server check failed: ${error.message}`);
-      }
-      retries--;
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    }
-  } catch (error) {
-    console.error(`[ERROR] Failed to start server: ${error.message}`);
-  }
-}
-
-// Start the MCP server if not running on Render
-if (!process.env.RENDER) {
-  debug('Starting local MCP server...');
-  
-  // Start the HTTP server locally
-  const server = spawn('node', ['src/index.js'], {
-    env: {
-      ...process.env,
-      PORT: process.env.PORT || '3001'
-    },
-    stdio: 'inherit'
-  });
-  
-  server.on('error', (err) => {
-    debug('Failed to start server:', err);
-  });
-  
-  // Ensure server gets cleaned up
-  process.on('exit', () => {
-    server.kill();
-  });
-}
-
-// Log ready
-debug('MCP wrapper ready!'); 

@@ -74,18 +74,48 @@ This implementation is compatible with standard MCP protocol clients like Claude
 - **wordpress_authenticated_user_analyzer**: Analyze user behavior patterns
 - **wordpress_form_analysis**: Create and optimize forms
 
-## Installation and Setup
+## Getting Started
 
-### Getting Your API Key
+### 1. Create a KumoCart Account
 
-To use our WordPress MCP tools, you'll need to obtain an API key:
+To use our WordPress MCP tools, first create an account:
 
-1. Visit [KumoCart.com](https://kumocart.com) and create an account
-2. Navigate to your Profile > API Keys
-3. Generate a new API key
-4. Copy your API key for use in the following setup instructions
+1. Visit [KumoCart.com](https://kumocart.com) and sign up
+2. Choose a subscription plan that fits your needs
+3. Complete the registration process
 
-### Installing in Claude Desktop
+### 2. Configure Your WordPress Site
+
+After creating your account, you'll need to connect your WordPress site:
+
+1. In your KumoCart dashboard, navigate to **WordPress Sites**
+2. Click **Add New Site**
+3. Enter your WordPress site information:
+   - Site Name (for your reference)
+   - WordPress Site URL
+   - Admin Username
+   - Application Password (created in your WordPress admin)
+
+> **Creating a WordPress Application Password:**
+> 1. Log in to your WordPress admin
+> 2. Go to Users → Profile
+> 3. Scroll to "Application Passwords"
+> 4. Enter "KumoCart" as the name
+> 5. Click "Add New Application Password"
+> 6. Copy the generated password
+
+Your credentials are securely stored and encrypted. Our service uses these credentials when executing WordPress operations on your behalf.
+
+### 3. Generate an API Key
+
+Once your WordPress site is configured:
+
+1. In your KumoCart dashboard, go to **API Keys**
+2. Click **Generate New Key**
+3. Name your key (e.g., "Claude Desktop" or "Cursor IDE")
+4. Copy your new API key for use in the next steps
+
+### 4. Connect to Claude Desktop
 
 To use our WordPress MCP tools in Claude Desktop:
 
@@ -100,7 +130,7 @@ To use our WordPress MCP tools in Claude Desktop:
 
 Once configured, you can access WordPress automation tools by asking Claude to perform WordPress and Divi tasks.
 
-### Installing in Cursor IDE
+### 5. Connect to Cursor IDE
 
 To add our WordPress MCP tools to Cursor:
 
@@ -123,6 +153,23 @@ To add our WordPress MCP tools to Cursor:
 5. Restart Cursor
 
 Now you can ask the Cursor AI assistant to perform WordPress and Divi automation tasks.
+
+## Managing Multiple WordPress Sites
+
+With KumoCart, you can manage multiple WordPress sites from a single account:
+
+1. Add each site in your KumoCart dashboard
+2. When executing tasks, specify which site to use with the `siteId` parameter
+3. If not specified, your default site will be used
+
+## API Key Management
+
+Your KumoCart dashboard provides several API key management features:
+
+- **Multiple Keys**: Create separate keys for different tools or team members
+- **Usage Tracking**: Monitor operations performed with each key
+- **Revocation**: Instantly revoke any key if needed
+- **Permissions**: Set site-specific permissions for each key
 
 ## Usage Guide
 
@@ -348,9 +395,13 @@ AI Agent: "Your lead generation forms are complete and optimized. I've created t
 
 **Value Delivered:** Professional lead generation system with strategic form placement, conversion tracking, and continuous improvement through A/B testing, driving more business opportunities.
 
-## Getting Access
+## Getting Support
 
-To get access to our WordPress MCP tools, visit [KumoCart.com](https://kumocart.com) to create an account and subscribe to a plan that fits your needs.
+If you encounter any issues or have questions about our services:
+
+1. Visit the Help Center in your KumoCart dashboard
+2. Email our support team at support@kumocart.com
+3. Use the live chat support available on our website
 
 ## License
 
@@ -358,7 +409,7 @@ Proprietary - KumoCart © 2025
 
 ## MCP Protocol Testing
 
-To test the MCP protocol implementation:
+For developers who want to test the MCP protocol implementation directly:
 
 1. Connect to the SSE endpoint: `curl -N https://wordpress-mcp.onrender.com/sse-cursor`
 2. The server will respond with an event containing the message endpoint

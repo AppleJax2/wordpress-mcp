@@ -15,11 +15,8 @@ const {
 const config = require('./config');
 const logger = require('./utils/logger');
 
-// Check if running in Smithery mode
-const IS_SMITHERY = process.env.SMITHERY === 'true';
-if (IS_SMITHERY) {
-  logger.info('Running in Smithery compatibility mode - using ultra-lightweight tool scanning');
-}
+// Force Smithery mode to false
+const IS_SMITHERY = false;
 
 // Create Express app
 const app = express();
@@ -27,51 +24,48 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Add API key validation middleware
-const validateApiKey = (req, res, next) => {
-  const apiKey = req.headers.authorization?.split('Bearer ')[1];
-  
-  // For now, pass through without validation
-  // TODO: Implement API key validation once SaaS service is built
+// Simple request logging
+app.use((req, res, next) => {
+  logger.debug(`${req.method} ${req.path}`);
   next();
-};
+});
 
-// We store sessions by sessionId => { sseRes, initialized: boolean }
-const sessions = new Map();
+// Active connections
+let sessions = new Map();
 
-// Simple route for checking server status
+// Home route
 app.get('/', (req, res) => {
-  res.json({
-    name: 'WordPress MCP Server',
-    version: '1.0.0',
-    description: 'MCP server for WordPress automation and management',
-    tools: IS_SMITHERY ? smitheryToolsMetadata : getBasicToolsMetadata(),
-    isPartial: true,
-    supportsLazyLoading: true,
-    lazyLoadingEnabled: true
-  });
+  res.send('WordPress MCP Server is running');
 });
 
 // Tools metadata endpoint - using lazy loading
 app.get('/tools', (req, res) => {
-  // In Smithery mode, return ultra-lightweight metadata
-  if (IS_SMITHERY) {
-    logger.info('Smithery scan detected - returning minimal metadata for fast scanning');
-    return res.json({
-      tools: smitheryToolsMetadata,
-      isPartial: true, 
-      supportsLazyLoading: true,
-      lazyLoadingEnabled: true
-    });
-  }
-  
   // Return basic metadata (names and descriptions only) for quick response
   res.json({
     tools: getBasicToolsMetadata(),
     isPartial: true,
     supportsLazyLoading: true,
     lazyLoadingEnabled: true
+  });
+});
+
+// Tool details endpoint
+app.get('/tools/:name', (req, res) => {
+  const { name } = req.params;
+  
+  // Find the tool by name
+  const tool = wordpressTools.find(t => t.name === name);
+  
+  if (!tool) {
+    return res.status(404).json({ error: `Tool '${name}' not found` });
+  }
+  
+  // Return the full tool metadata
+  res.json({
+    tool: getFullToolMetadata(tool),
+    isPartial: false
   });
 });
 
@@ -83,7 +77,7 @@ app.get('/tools', (req, res) => {
 | Sends event:endpoint => /message?sessionId=XYZ
 | Sends heartbeat every 10 seconds
 */
-app.get('/sse-cursor', validateApiKey, (req, res) => {
+app.get('/sse-cursor', (req, res) => {
   logger.info('[MCP] SSE => /sse-cursor connected');
   
   // SSE headers
@@ -122,7 +116,7 @@ app.get('/sse-cursor', validateApiKey, (req, res) => {
 | => "tools/list" => minimal ack => SSE => array of tools
 | => "tools/call" => minimal ack => SSE => result of the call
 */
-app.post('/message', validateApiKey, (req, res) => {
+app.post('/message', (req, res) => {
   logger.info('[MCP] POST /message => body:', req.body, ' query:', req.query);
   
   const sessionId = req.query.sessionId;
@@ -716,7 +710,6 @@ app.listen(PORT, '0.0.0.0', () => {
   logger.info(`WordPress MCP Server running on port ${PORT}, listening on all interfaces`);
   logger.info(`Environment: ${config.server.environment}`);
   logger.info(`WordPress site: ${config.wordpress.siteUrl}`);
-  logger.info(`Smithery mode: ${IS_SMITHERY ? 'enabled' : 'disabled'}`);
   
   if (!config.wordpress.username || !config.wordpress.appPassword) {
     logger.warn('WordPress credentials not configured. Tool execution may fail.');
@@ -791,7 +784,7 @@ process.on('SIGTERM', async () => {
   
   // Exit process
   setTimeout(() => process.exit(0), 1000);
-});
+}); 
 
 // Export for testing
 module.exports = app; 
