@@ -70,11 +70,15 @@
   "mcp": {
     "protocol": "stdio",
     "protocolVersion": "2023-07-01",
-    "max_connections": 5,
-    "lazyLoadingEnabled": true
+    "maxConnections": 5,
+    "lazyLoadingEnabled": true,
+    "endpoints": {
+      "sseConnect": "/sse-cursor",
+      "message": "/message"
+    }
   },
   "resources": {
-    "memory": "low",
-    "cpu": "low"
+    "memory": "medium",
+    "cpu": "medium"
   }
 } 

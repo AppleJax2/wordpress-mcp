@@ -5,9 +5,12 @@ description: WordPress and Divi Theme Builder MCP Server for website creation an
 # Protocol to communicate with the server
 protocol: http # Use HTTP transport for remote scanning
 mcp:
-  protocolVersion: "2023-07-01"  # Changed from "1.0" to "2023-07-01" for compatibility with environment variables
+  protocolVersion: "2023-07-01"
   maxConnections: 5
   lazyLoadingEnabled: true
+  endpoints:
+    sseConnect: "/sse-cursor" # Specify the SSE connection endpoint
+    message: "/message" # Specify the message endpoint
 
 # Command to start the server for Smithery Hosted Deployment
 startCommand:

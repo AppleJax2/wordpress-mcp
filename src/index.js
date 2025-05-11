@@ -4,6 +4,7 @@
  */
 const express = require('express');
 const cors = require('cors');
+const { v4: uuidv4 } = require('uuid');
 const { 
   wordpressTools, 
   wordpressToolsMetadata, 
@@ -26,6 +27,9 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+
+// We store sessions by sessionId => { sseRes, initialized: boolean }
+const sessions = new Map();
 
 // Simple route for checking server status
 app.get('/', (req, res) => {
@@ -62,8 +66,263 @@ app.get('/tools', (req, res) => {
   });
 });
 
+/* 
+|--------------------------------------------------------------------------
+| 1) Server-Sent Events (SSE) => GET /sse-cursor
+|--------------------------------------------------------------------------
+| Sets up Server-Sent Events connection
+| Sends event:endpoint => /message?sessionId=XYZ
+| Sends heartbeat every 10 seconds
+*/
+app.get('/sse-cursor', (req, res) => {
+  logger.info('[MCP] SSE => /sse-cursor connected');
+  
+  // SSE headers
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  
+  // Generate a sessionId
+  const sessionId = uuidv4();
+  sessions.set(sessionId, { sseRes: res, initialized: false });
+  logger.info('[MCP] Created sessionId:', sessionId);
+  
+  // event: endpoint => /message?sessionId=...
+  res.write(`event: endpoint\n`);
+  res.write(`data: /message?sessionId=${sessionId}\n\n`);
+  
+  // Heartbeat every 10 seconds
+  const hb = setInterval(() => {
+    res.write(`event: heartbeat\ndata: ${Date.now()}\n\n`);
+  }, 10000);
+  
+  // Cleanup on disconnect
+  req.on('close', () => {
+    clearInterval(hb);
+    sessions.delete(sessionId);
+    logger.info('[MCP] SSE closed => sessionId=', sessionId);
+  });
+});
+
+/*
+|--------------------------------------------------------------------------
+| 2) JSON-RPC => POST /message?sessionId=...
+|--------------------------------------------------------------------------
+| Handle JSON-RPC messages with proper MCP protocol flow:
+| => "initialize" => minimal ack => SSE => capabilities
+| => "tools/list" => minimal ack => SSE => array of tools
+| => "tools/call" => minimal ack => SSE => result of the call
+*/
+app.post('/message', (req, res) => {
+  logger.info('[MCP] POST /message => body:', req.body, ' query:', req.query);
+  
+  const sessionId = req.query.sessionId;
+  if (!sessionId) {
+    return res.status(400).json({ error: 'Missing sessionId in ?sessionId=...' });
+  }
+  
+  const sessionData = sessions.get(sessionId);
+  if (!sessionData) {
+    return res.status(404).json({ error: 'No SSE session with that sessionId' });
+  }
+  
+  const rpc = req.body;
+  
+  // Check JSON-RPC formatting
+  if (!rpc || rpc.jsonrpc !== '2.0' || !rpc.method) {
+    return res.json({
+      jsonrpc: '2.0',
+      id: rpc?.id ?? null,
+      error: {
+        code: -32600,
+        message: 'Invalid JSON-RPC request'
+      }
+    });
+  }
+  
+  // Minimal HTTP ack
+  res.json({
+    jsonrpc: '2.0',
+    id: rpc.id,
+    result: {
+      ack: `Received ${rpc.method}`
+    }
+  });
+  
+  // The actual response => SSE
+  const sseRes = sessionData.sseRes;
+  if (!sseRes) {
+    logger.error('[MCP] No SSE response found => sessionId=', sessionId);
+    return;
+  }
+  
+  switch (rpc.method) {
+    // -- initialize
+    case 'initialize': {
+      sessionData.initialized = true;
+      
+      // SSE => event: message => capabilities
+      const initCaps = {
+        jsonrpc: '2.0',
+        id: rpc.id, // Use the same ID to prevent "unknown ID" errors
+        result: {
+          protocolVersion: '2023-07-01',
+          capabilities: {
+            tools: {
+              listChanged: true,
+              supportsLazyLoading: true
+            },
+            resources: {
+              subscribe: true,
+              listChanged: true
+            },
+            prompts: {
+              listChanged: true
+            },
+            logging: {}
+          },
+          serverInfo: {
+            name: 'WordPress MCP Server',
+            version: '1.0.0',
+            description: 'MCP server for WordPress automation and management'
+          }
+        }
+      };
+      
+      sseRes.write(`event: message\n`);
+      sseRes.write(`data: ${JSON.stringify(initCaps)}\n\n`);
+      logger.info('[MCP] SSE => event: message => init caps => sessionId=', sessionId);
+      return;
+    }
+    
+    // -- tools/list
+    case 'tools/list': {
+      // Determine which tools list to send based on mode
+      const toolsList = IS_SMITHERY ? smitheryToolsMetadata : getBasicToolsMetadata();
+      
+      const toolsMsg = {
+        jsonrpc: '2.0',
+        id: rpc.id, // same ID to prevent "unknown ID" errors
+        result: {
+          tools: toolsList,
+          count: toolsList.length
+        }
+      };
+      
+      sseRes.write(`event: message\n`);
+      sseRes.write(`data: ${JSON.stringify(toolsMsg)}\n\n`);
+      logger.info('[MCP] SSE => event: message => tools/list => sessionId=', sessionId);
+      return;
+    }
+    
+    // -- tools/call: Run a WordPress tool
+    case 'tools/call': {
+      const toolName = rpc.params?.name;
+      const args = rpc.params?.arguments || {};
+      
+      logger.info('[MCP] tools/call => name=', toolName, 'args=', args);
+      
+      if (!toolName) {
+        const errorMsg = {
+          jsonrpc: '2.0',
+          id: rpc.id,
+          error: {
+            code: -32602,
+            message: 'Missing tool name in request'
+          }
+        };
+        
+        sseRes.write(`event: message\n`);
+        sseRes.write(`data: ${JSON.stringify(errorMsg)}\n\n`);
+        return;
+      }
+      
+      // Find the tool in our WordPress tools
+      const tool = wordpressTools[toolName];
+      
+      if (!tool) {
+        const errorMsg = {
+          jsonrpc: '2.0',
+          id: rpc.id,
+          error: {
+            code: -32601,
+            message: `No such tool '${toolName}'`
+          }
+        };
+        
+        sseRes.write(`event: message\n`);
+        sseRes.write(`data: ${JSON.stringify(errorMsg)}\n\n`);
+        logger.error('[MCP] SSE => event: message => unknown tool call');
+        return;
+      }
+      
+      // Execute the tool (asynchronously)
+      tool.execute(args)
+        .then(result => {
+          const callMsg = {
+            jsonrpc: '2.0',
+            id: rpc.id,
+            result: {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(result)
+                }
+              ]
+            }
+          };
+          
+          sseRes.write(`event: message\n`);
+          sseRes.write(`data: ${JSON.stringify(callMsg)}\n\n`);
+          logger.info('[MCP] SSE => event: message => tools/call success');
+        })
+        .catch(error => {
+          const errorMsg = {
+            jsonrpc: '2.0',
+            id: rpc.id,
+            error: {
+              code: -32000,
+              message: error.message || 'Error executing tool'
+            }
+          };
+          
+          sseRes.write(`event: message\n`);
+          sseRes.write(`data: ${JSON.stringify(errorMsg)}\n\n`);
+          logger.error('[MCP] SSE => event: message => tools/call error:', error);
+        });
+      
+      return;
+    }
+    
+    // -- notifications/initialized (acknowledge client ready state)
+    case 'notifications/initialized': {
+      logger.info('[MCP] notifications/initialized => sessionId=', sessionId);
+      // No SSE response needed
+      return;
+    }
+    
+    // -- Handle unknown methods
+    default: {
+      logger.warn('[MCP] unknown method =>', rpc.method);
+      
+      const errorMsg = {
+        jsonrpc: '2.0',
+        id: rpc.id,
+        error: {
+          code: -32601,
+          message: `Method '${rpc.method}' not recognized`
+        }
+      };
+      
+      sseRes.write(`event: message\n`);
+      sseRes.write(`data: ${JSON.stringify(errorMsg)}\n\n`);
+      return;
+    }
+  }
+});
+
 // Add Smithery MCP endpoint to handle protocol requests
-// This fixes the 404 error in Smithery deployment
+// This maintains backward compatibility
 app.post('/mcp', async (req, res) => {
   const message = req.body;
   logger.info('Received POST request to /mcp', { messageId: message?.id, method: message?.method });
