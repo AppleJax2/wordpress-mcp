@@ -77,7 +77,7 @@ app.post('/mcp', async (req, res) => {
         jsonrpc: "2.0",
         id: message.id,
         result: {
-          protocolVersion: "1.0",
+          protocolVersion: "2023-07-01",
           serverInfo: {
             name: "WordPress MCP Server",
             version: "1.0.0",
@@ -247,7 +247,7 @@ app.post('/stream', async (req, res) => {
         jsonrpc: "2.0",
         id: message.id,
         result: {
-          protocolVersion: "1.0",
+          protocolVersion: "2023-07-01",
           serverInfo: {
             name: "WordPress MCP Server",
             version: "1.0.0",
