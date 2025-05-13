@@ -1,6 +1,16 @@
 # WordPress MCP Server
 
-A specialized Model Context Protocol (MCP) server for WordPress browser automation. This project provides tools for AI agents to create, manage, and customize WordPress websites with a focus on the Divi theme builder.
+A specialized remotely hosted Model Context Protocol (MCP) server for WordPress browser automation. This service provides tools for AI agents to create, manage, and customize WordPress websites with a focus on the Divi theme builder.
+
+## What is WordPress MCP Server?
+
+WordPress MCP Server is a cloud-based service that enables AI assistants to perform WordPress tasks through browser automation. It implements the Model Context Protocol (MCP) to allow tools like Claude and Cursor to directly interact with WordPress sites on your behalf.
+
+Key benefits:
+- No installation or deployment required
+- Secure connection to your WordPress site
+- Powerful automation capabilities through AI agents
+- Seamless integration with Claude Desktop and Cursor IDE
 
 ## Features
 
@@ -18,6 +28,64 @@ A specialized Model Context Protocol (MCP) server for WordPress browser automati
 - User journey mapping and navigation optimization
 - Form creation and analysis
 - Content auditing and site polishing
+
+## Getting Started
+
+### 1. Prepare Your WordPress Site
+
+Before connecting to our service, you'll need to:
+
+1. Have an active WordPress site with admin access
+2. Generate an Application Password:
+   - Log in to your WordPress admin
+   - Go to Users → Profile
+   - Scroll to "Application Passwords"
+   - Enter a name for the application (e.g., "WordPress MCP")
+   - Click "Add New Application Password"
+   - Copy the generated password for later use
+
+### 2. Obtain Access Credentials
+
+Contact our team to receive your API key for accessing the service.
+
+### 3. Connect to Claude Desktop
+
+To use our WordPress automation tools in Claude Desktop:
+
+1. Open Claude Desktop application
+2. Go to Settings > Extensions
+3. Click "Add Model Context Protocol Server"
+4. Enter the following details:
+   - Name: WordPress MCP
+   - URL: `https://wordpress-mcp.onrender.com/sse-cursor`
+   - API Key: Your provided API key
+5. Click "Save"
+
+Once configured, you can ask Claude to perform WordPress and Divi tasks.
+
+### 4. Connect to Cursor IDE
+
+To add our WordPress automation tools to Cursor:
+
+1. Open Cursor IDE
+2. Go to Settings > MCP Configuration
+3. Add the following to your MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "wordpress-mcp": {
+      "url": "https://wordpress-mcp.onrender.com/sse-cursor",
+      "apiKey": "YOUR_API_KEY"
+    }
+  }
+}
+```
+
+4. Replace `YOUR_API_KEY` with your provided API key
+5. Restart Cursor
+
+Now you can ask the Cursor AI assistant to perform WordPress and Divi automation tasks.
 
 ## MCP Protocol Implementation
 
@@ -74,119 +142,17 @@ This implementation is compatible with standard MCP protocol clients like Claude
 - **wordpress_authenticated_user_analyzer**: Analyze user behavior patterns
 - **wordpress_form_analysis**: Create and optimize forms
 
-## Getting Started
+## Using the Service
 
-### Prerequisites
+After connecting Claude Desktop or Cursor to our server, you can instruct the AI to interact with your WordPress site using natural language. For example:
 
-- Node.js (v18+)
-- A WordPress site with admin credentials
-- Application Password generated in WordPress
+- "Create a new about page with three sections"
+- "Set up a WooCommerce store with product categories for clothing"
+- "Design a professional homepage using Divi with a hero section"
+- "Audit my site content and suggest SEO improvements"
 
-### Installation
+The AI will use our specialized WordPress tools to execute these tasks.
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/wordpress-mcp-server.git
-   cd wordpress-mcp-server
-   ```
+## Support
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Configure environment variables:
-   Create a `.env` file with the following variables:
-   ```
-   WP_SITE_URL=https://your-wordpress-site.com
-   WP_USERNAME=your-admin-username
-   WP_APP_PASSWORD=your-application-password
-   PORT=10000
-   LOG_LEVEL=info
-   HEADLESS=true
-   REQUIRE_API_KEY=false
-   ```
-
-4. Start the server:
-   ```bash
-   npm start
-   ```
-
-### Generating a WordPress Application Password
-
-To create an application password for your WordPress site:
-1. Log in to your WordPress admin
-2. Go to Users → Profile
-3. Scroll to "Application Passwords"
-4. Enter a name for the application
-5. Click "Add New Application Password"
-6. Copy the generated password
-
-## API Authentication
-
-For production deployments, it's recommended to enable API key authentication:
-
-1. Set `REQUIRE_API_KEY=true` in your environment variables
-2. Implement a key generation and validation system (see API-AUTHENTICATION.md for details)
-
-## Connecting to Claude Desktop or Cursor IDE
-
-### Claude Desktop
-
-1. Open Claude Desktop application
-2. Go to Settings > Extensions
-3. Click "Add Model Context Protocol Server"
-4. Enter the following details:
-   - Name: WordPress MCP
-   - URL: Your deployed server URL
-   - API Key: Your API key (if enabled)
-5. Click "Save"
-
-### Cursor IDE
-
-1. Open Cursor IDE
-2. Go to Settings > MCP Configuration
-3. Add the following to your MCP configuration:
-
-```json
-{
-  "mcpServers": {
-    "wordpress-mcp": {
-      "url": "Your deployed server URL",
-      "apiKey": "YOUR_API_KEY"
-    }
-  }
-}
-```
-
-4. Replace `YOUR_API_KEY` with your API key (if enabled)
-5. Restart Cursor
-
-## MCP Protocol Testing
-
-For developers who want to test the MCP protocol implementation directly:
-
-1. Connect to the SSE endpoint: `curl -N http://localhost:10000/sse-cursor`
-2. The server will respond with an event containing the message endpoint
-3. Send a JSON-RPC request to the message endpoint:
-
-```bash
-curl -X POST -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_API_KEY" -d '{"jsonrpc":"2.0","id":"1","method":"initialize"}' http://localhost:10000/message?sessionId=YOUR_SESSION_ID
-```
-
-4. You should receive a minimal HTTP acknowledgment and see the actual response in the SSE stream
-
-## Deployment
-
-You can deploy this server using Docker:
-
-```bash
-docker build -t wordpress-mcp-server .
-docker run -p 10000:10000 --env-file .env wordpress-mcp-server
-```
-
-A sample render.yaml file is provided for deployment on Render.com.
-
-## License
-
-MIT License 
+For assistance with the WordPress MCP Server, please contact our support team. 
