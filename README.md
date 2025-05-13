@@ -15,6 +15,9 @@ Key benefits:
 ## Features
 
 - WordPress site management tools
+- Strategic planning and business tools
+- Wireframing and design document creation
+- Site architecture planning and visualization
 - Divi theme builder integration
 - Page creation and content management
 - Theme customization and management
@@ -141,6 +144,17 @@ This implementation is compatible with standard MCP protocol clients like Claude
 
 ## Tools Available
 
+### Planning & Strategy
+- **wordpress_business_plan**: Create business plans and strategies for WordPress sites
+- **wordpress_wireframe**: Design wireframes for WordPress site layouts
+- **wordpress_inspiration**: Generate creative ideas and examples for WordPress sites
+- **wordpress_design_document**: Create comprehensive design documentation for WordPress projects
+- **wordpress_design_tokens**: Define and manage design tokens for consistent visual styling
+- **wordpress_full_hierarchy**: Generate and visualize complete site hierarchies and structures
+- **wordpress_theme_picker**: Compare and select WordPress themes based on requirements
+- **wordpress_modification_planner**: Plan site changes with thorough before/after documentation
+- **wordpress_sitemap_tool**: Generate and configure site sitemaps
+
 ### WordPress Core
 - **wordpress_site_info**: Get information about the WordPress site
 - **wordpress_auth_manager**: Handle WordPress authentication
@@ -149,6 +163,9 @@ This implementation is compatible with standard MCP protocol clients like Claude
 - **wordpress_user_manager**: Manage WordPress users and roles
 - **wordpress_plugin_manager**: Install, activate, and configure plugins
 - **wordpress_settings_manager**: Configure WordPress site settings
+- **wordpress_build_site**: Comprehensive tool for building complete WordPress sites
+- **wordpress_configuration**: Configure WordPress general settings and options
+- **wordpress_implement_modification**: Apply planned modifications to WordPress sites
 
 ### Divi Builder
 - **wordpress_divi_builder**: Advanced page building with the Divi framework
@@ -160,7 +177,6 @@ This implementation is compatible with standard MCP protocol clients like Claude
 - **wordpress_widget_manager**: Manage WordPress widgets
 - **wordpress_media_manager**: Manage WordPress media library
 - **wordpress_navigation_optimizer**: Analyze and optimize site navigation
-- **wordpress_sitemap_tool**: Generate and configure site sitemaps
 
 ### E-commerce
 - **wordpress_woocommerce_manager**: Set up and manage WooCommerce stores

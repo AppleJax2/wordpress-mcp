@@ -11,12 +11,23 @@ const FullHierarchyTool = require('./full-hierarchy-tool');
 const ThemePickerTool = require('./theme-picker-tool'); 
 const InspirationTool = require('./inspiration-tool');
 const BusinessPlanTool = require('./business-plan-tool');
+const UserJourneyMapperTool = require('./user-journey-mapper-tool');
+const DesignAnalyzerTool = require('./design-analyzer-tool');
+const FormAnalysisTool = require('./form-analysis-tool');
+const NavigationOptimizerTool = require('./navigation-optimizer-tool');
 
 // Execution Tools
 const ImplementModificationTool = require('./implement-modification-tool');
 const ConfigurationTool = require('./configuration-tool');
 const MediaManagerTool = require('./media-manager-tool');
 const BuildSiteTool = require('./build-site-tool');
+const ThemeManagerTool = require('./theme-manager-tool');
+const PluginManagerTool = require('./plugin-manager-tool');
+const ContentAuditTool = require('./content-audit-tool');
+const SitePolisherTool = require('./site-polisher-tool');
+const AuthenticatedUserAnalyzerTool = require('./authenticated-user-analyzer-tool');
+const WooCommerceManagerTool = require('./woocommerce-manager-tool');
+const GeodirectoryTool = require('./geodirectory-tool');
 
 // Helper Tools
 const SiteInfoTool = require('./site-info-tool');
@@ -27,6 +38,9 @@ const MenuManagerTool = require('./menu-manager-tool');
 const DiviBuilderTool = require('./divi-builder-tool');
 const WidgetManagerTool = require('./widget-manager-tool');
 const ThemeCustomizerTool = require('./theme-customizer-tool');
+const UserManagerTool = require('./user-manager-tool');
+const SettingsManagerTool = require('./settings-manager-tool');
+const SeoManagerTool = require('./seo-manager-tool');
 
 // Tool classes for lazy initialization
 const ToolClasses = {
@@ -40,12 +54,23 @@ const ToolClasses = {
   ThemePickerTool,
   InspirationTool,
   BusinessPlanTool,
+  UserJourneyMapperTool,
+  DesignAnalyzerTool,
+  FormAnalysisTool,
+  NavigationOptimizerTool,
   
   // Execution Tools
   ImplementModificationTool,
   ConfigurationTool,
   MediaManagerTool,
   BuildSiteTool,
+  ThemeManagerTool,
+  PluginManagerTool,
+  ContentAuditTool,
+  SitePolisherTool,
+  AuthenticatedUserAnalyzerTool,
+  WooCommerceManagerTool,
+  GeodirectoryTool,
   
   // Helper Tools
   SiteInfoTool,
@@ -55,7 +80,10 @@ const ToolClasses = {
   MenuManagerTool,
   DiviBuilderTool,
   WidgetManagerTool,
-  ThemeCustomizerTool
+  ThemeCustomizerTool,
+  UserManagerTool,
+  SettingsManagerTool,
+  SeoManagerTool
 };
 
 // Store tool instances
