@@ -226,15 +226,20 @@ app.post('/message', (req, res) => {
       sessionData.initialized = true;
       
       // Get client protocol version for better compatibility
-      const responseProtocolVersion = process.env.MCP_PROTOCOL_VERSION || '2025-03-26';
-      logger.info(`[MCP] Using protocol version: ${responseProtocolVersion}`);
+      const clientProtocolVersion = rpc.params?.protocolVersion || '2025-03-26';
+      
+      // Store the client's protocol version in the session
+      sessionData.protocolVersion = clientProtocolVersion;
+      
+      // Always respond with the client's protocol version to ensure compatibility
+      logger.info(`[MCP] Client requested protocol version: ${clientProtocolVersion}`);
       
       // SSE => event: message => capabilities
       const initCaps = {
         jsonrpc: '2.0',
         id: rpc.id, // Use the same ID to prevent "unknown ID" errors
         result: {
-          protocolVersion: responseProtocolVersion,
+          protocolVersion: clientProtocolVersion,
           capabilities: {
             tools: {
               listChanged: true,
@@ -484,15 +489,17 @@ app.post('/stream', validateApiKey, async (req, res) => {
       sessionData.initialized = true;
       
       // Get client protocol version for better compatibility
-      const responseProtocolVersion = process.env.MCP_PROTOCOL_VERSION || '2025-03-26';
-      logger.info(`[MCP] Using protocol version: ${responseProtocolVersion}`);
+      const clientProtocolVersion = message.params?.protocolVersion || '2025-03-26';
+      sessionData.protocolVersion = clientProtocolVersion;
+      
+      logger.info(`[MCP] Client requested protocol version: ${clientProtocolVersion}`);
       
       // Return initialization capabilities
       return res.json({
         jsonrpc: "2.0",
         id: message.id,
         result: {
-          protocolVersion: responseProtocolVersion,
+          protocolVersion: clientProtocolVersion,
           serverInfo: {
             name: "Tanuki WordPress MCP Server",
             version: "1.0.0",
