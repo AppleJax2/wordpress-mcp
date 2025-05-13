@@ -124,7 +124,7 @@ To create an application password for your WordPress site:
 
 ## API Authentication
 
-By default, the server can run without API authentication during development by setting `REQUIRE_API_KEY=false`. For production deployments, it's recommended to enable API key authentication:
+For production deployments, it's recommended to enable API key authentication:
 
 1. Set `REQUIRE_API_KEY=true` in your environment variables
 2. Implement a key generation and validation system (see API-AUTHENTICATION.md for details)
@@ -138,7 +138,7 @@ By default, the server can run without API authentication during development by 
 3. Click "Add Model Context Protocol Server"
 4. Enter the following details:
    - Name: WordPress MCP
-   - URL: `http://localhost:10000/sse-cursor` (or your deployment URL)
+   - URL: Your deployed server URL
    - API Key: Your API key (if enabled)
 5. Click "Save"
 
@@ -152,7 +152,7 @@ By default, the server can run without API authentication during development by 
 {
   "mcpServers": {
     "wordpress-mcp": {
-      "url": "http://localhost:10000/sse-cursor",
+      "url": "Your deployed server URL",
       "apiKey": "YOUR_API_KEY"
     }
   }
