@@ -52,14 +52,49 @@ Contact our team to receive your API key for accessing the service.
 
 To use our WordPress automation tools in Claude Desktop:
 
+#### Option 1: Remote Server Configuration (Recommended)
+
 1. Open Claude Desktop application
-2. Go to Settings > Extensions
-3. Click "Add Model Context Protocol Server"
-4. Enter the following details:
-   - Name: WordPress MCP
-   - URL: `https://wordpress-mcp.onrender.com/sse-cursor`
-   - API Key: Your provided API key
-5. Click "Save"
+2. Go to Settings > Developer
+3. Click "Edit Config" to open the configuration file
+4. Add the following configuration:
+
+```json
+{
+  "mcpServers": {
+    "wordpress-mcp": {
+      "url": "https://wordpress-mcp.onrender.com/sse-cursor",
+      "apiKey": "YOUR_API_KEY"
+    }
+  }
+}
+```
+
+5. Replace `YOUR_API_KEY` with your provided API key
+6. Save the file and restart Claude Desktop
+
+If you encounter the "invalid_type" error with the "command" field, use Option 2 below.
+
+#### Option 2: Alternative Configuration Method
+
+If Option 1 doesn't work, use this configuration that specifies how to connect to the remote server:
+
+```json
+{
+  "mcpServers": {
+    "wordpress-mcp": {
+      "command": "curl",
+      "args": [
+        "-N",
+        "-H", "Authorization: Bearer YOUR_API_KEY",
+        "https://wordpress-mcp.onrender.com/sse-cursor"
+      ]
+    }
+  }
+}
+```
+
+Replace `YOUR_API_KEY` with your provided API key, save the file, and restart Claude Desktop.
 
 Once configured, you can ask Claude to perform WordPress and Divi tasks.
 
@@ -152,6 +187,37 @@ After connecting Claude Desktop or Cursor to our server, you can instruct the AI
 - "Audit my site content and suggest SEO improvements"
 
 The AI will use our specialized WordPress tools to execute these tasks.
+
+## Troubleshooting
+
+### Claude Desktop Issues
+
+If you're experiencing problems with Claude Desktop:
+
+1. **Configuration Errors**: Make sure your `claude_desktop_config.json` is properly formatted with no syntax errors
+2. **Command Field Error**: If you get an "invalid_type" error for the "command" field, try the alternative configuration method (Option 2)
+3. **Restart Required**: Always restart Claude Desktop completely after configuration changes
+4. **Check Logs**: Look at Claude Desktop logs to find specific error messages:
+   - MacOS: `~/Library/Logs/Claude/mcp*.log`
+   - Windows: `%APPDATA%\Claude\logs\mcp*.log`
+
+### Cursor IDE Issues
+
+If tools aren't showing up in Cursor IDE:
+
+1. **Refresh MCP Servers**: In Cursor, go to Settings > MCP and click the refresh button
+2. **Prompt the AI**: Sometimes you need to specifically ask the AI to use WordPress tools
+3. **Check Configuration**: Verify your MCP configuration has the correct URL and API key
+4. **Verify API Key**: Ensure your API key is active and properly formatted
+5. **Restart Cursor**: Close and reopen Cursor completely after configuration changes
+
+### General Connection Issues
+
+If you're still having trouble connecting:
+
+1. **Server Status**: The server might be temporarily down or restarting; try again later
+2. **Network Issues**: Check your internet connection and ensure your firewall isn't blocking the connection
+3. **API Rate Limits**: You might have exceeded usage limits; contact support for assistance
 
 ## Support
 

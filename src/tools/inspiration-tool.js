@@ -311,7 +311,7 @@ class InspirationTool extends BaseTool {
       'blog_casual': [
         {
           title: '10 Tech Hacks That Will Make Your Life So Much Easier',
-          excerpt: 'Let's face it – we could all use a few shortcuts in our digital lives. Whether you're drowning in emails or just can't find that file you saved yesterday, these game-changing tech hacks will save you tons of time and frustration...',
+          excerpt: 'Let\'s face it – we could all use a few shortcuts in our digital lives. Whether you\'re drowning in emails or just can\'t find that file you saved yesterday, these game-changing tech hacks will save you tons of time and frustration...',
           structure: [
             'Quick email management tricks',
             'Smartphone productivity hacks',
@@ -321,8 +321,8 @@ class InspirationTool extends BaseTool {
           ]
         },
         {
-          title: 'I Tried These Viral Productivity Methods So You Don't Have To',
-          excerpt: 'You've probably seen them all over social media – those trendy productivity techniques promising to transform your work life. But do they actually work? I spent a month testing the most popular methods, and the results might surprise you...',
+          title: 'I Tried These Viral Productivity Methods So You Don\'t Have To',
+          excerpt: 'You\'ve probably seen them all over social media – those trendy productivity techniques promising to transform your work life. But do they actually work? I spent a month testing the most popular methods, and the results might surprise you...',
           structure: [
             'My productivity journey and struggles',
             'Method #1: The Pomodoro Technique experiment',
