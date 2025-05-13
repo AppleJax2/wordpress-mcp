@@ -419,7 +419,7 @@ class BusinessPlanTool extends BaseTool {
       keyMessages: [
         'We understand your challenges and provide solutions that work',
         'Our offerings provide exceptional value compared to alternatives',
-        'We're committed to customer satisfaction and ongoing support'
+        "We're committed to customer satisfaction and ongoing support"
       ],
       budget: 'Initial marketing budget should be 15-20% of revenue, adjusted based on ROI.',
       metrics: [
@@ -464,7 +464,7 @@ class BusinessPlanTool extends BaseTool {
       'content': {
         primaryStreams: [
           { name: 'Premium Content', description: 'Paid access to exclusive or high-value content', implementation: 'Implement membership or paywall with premium content' },
-          { name: 'Display Advertising', description: 'Revenue from ads displayed on site', implementation: 'Implement strategic ad placements that don't detract from user experience' }
+          { name: 'Display Advertising', description: 'Revenue from ads displayed on site', implementation: "Implement strategic ad placements that don't detract from user experience" }
         ],
         secondaryStreams: [
           { name: 'Affiliate Marketing', description: 'Commissions from recommending relevant products', implementation: 'Include affiliate links in relevant content' },
