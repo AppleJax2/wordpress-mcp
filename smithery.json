@@ -1,0 +1,36 @@
+{
+  "name": "wordpress-mcp",
+  "version": "1.0.0",
+  "description": "WordPress MCP server for browser automation and management",
+  "mcp": {
+    "entry": "src/index.js",
+    "tools": [
+      "wordpress_site_info",
+      "wordpress_create_page",
+      "wordpress_theme_manager",
+      "wordpress_auth_manager",
+      "wordpress_media_manager",
+      "wordpress_content_manager",
+      "wordpress_menu_manager",
+      "wordpress_divi_builder",
+      "wordpress_widget_manager",
+      "wordpress_theme_customizer"
+    ],
+    "protocolVersion": "2025-03-26",
+    "transport": "sse"
+  },
+  "environment": {
+    "WP_SITE_URL": {
+      "description": "WordPress site URL",
+      "required": true
+    },
+    "WP_USERNAME": {
+      "description": "WordPress admin username or email",
+      "required": true
+    },
+    "WP_APP_PASSWORD": {
+      "description": "WordPress application password",
+      "required": true
+    }
+  }
+}

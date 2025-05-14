@@ -1,31 +1,31 @@
-# WordPress MCP Server
+# TanukiMCP - WordPress Automation Platform
 
-A specialized remotely hosted Model Context Protocol (MCP) server for WordPress browser automation. This service provides tools for AI agents to create, manage, and customize WordPress websites with a focus on the Divi theme builder.
+A comprehensive MCP server for WordPress automation. TanukiMCP provides powerful AI-driven tools for creating, managing, and customizing WordPress websites through the Model Context Protocol (MCP), compatible with Cursor, Claude, and other MCP-enabled AI tools.
 
-## What is WordPress MCP Server?
+## What is TanukiMCP?
 
-WordPress MCP Server is a cloud-based service that enables AI assistants to perform WordPress tasks through browser automation. It implements the Model Context Protocol (MCP) to allow tools like Claude and Cursor to directly interact with WordPress sites on your behalf.
+TanukiMCP is a cloud-based automation platform that enables users to perform complex WordPress tasks through a dedicated web application. It leverages the Model Context Protocol (MCP) and integrates directly with the WordPress REST API to provide a seamless automation experience.
 
 Key benefits:
-- No installation or deployment required
-- Secure connection to your WordPress site
-- Powerful automation capabilities through AI agents
-- Seamless integration with Claude Desktop and Cursor IDE
+- No coding knowledge required
+- Secure connection to your WordPress sites
+- Powerful automation workflows
+- Real-time preview of changes
+- Multi-site management
+- Intuitive visual interface
 
 ## Features
 
 - WordPress site management tools
-- Strategic planning and business tools
+- Strategic planning and design tools
 - Wireframing and design document creation
 - Site architecture planning and visualization
-- Divi theme builder integration
 - Page creation and content management
 - Theme customization and management
 - Media management
 - Menu and widget configuration
-- Authentication and user management
+- User management
 - WooCommerce e-commerce support
-- GeoDirectory location-based directory integration
 - SEO optimization tools
 - Visual design analysis
 - User journey mapping and navigation optimization
@@ -34,207 +34,201 @@ Key benefits:
 
 ## Getting Started
 
-### 1. Prepare Your WordPress Site
+### Using with Cursor IDE
 
-Before connecting to our service, you'll need to:
+To connect TanukiMCP to Cursor IDE:
 
-1. Have an active WordPress site with admin access
-2. Generate an Application Password:
-   - Log in to your WordPress admin
-   - Go to Users → Profile
-   - Scroll to "Application Passwords"
-   - Enter a name for the application (e.g., "WordPress MCP")
-   - Click "Add New Application Password"
-   - Copy the generated password for later use
-
-### 2. Obtain Access Credentials
-
-Contact our team to receive your API key for accessing the service.
-
-### 3. Connect to Claude Desktop
-
-To use our WordPress automation tools in Claude Desktop:
-
-#### Option 1: Remote Server Configuration (Recommended)
-
-1. Open Claude Desktop application
-2. Go to Settings > Developer
-3. Click "Edit Config" to open the configuration file
-4. Add the following configuration:
+1. Make sure you have Cursor installed (download from [cursor.sh](https://cursor.sh))
+2. Create or edit `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project-specific) with:
 
 ```json
 {
   "mcpServers": {
-    "wordpress-mcp": {
-      "url": "https://wordpress-mcp.onrender.com/sse-cursor",
-      "apiKey": "YOUR_API_KEY"
-    }
-  }
-}
-```
-
-5. Replace `YOUR_API_KEY` with your provided API key
-6. Save the file and restart Claude Desktop
-
-If you encounter the "invalid_type" error with the "command" field, use Option 2 below.
-
-#### Option 2: Alternative Configuration Method
-
-If Option 1 doesn't work, use this configuration that specifies how to connect to the remote server:
-
-```json
-{
-  "mcpServers": {
-    "wordpress-mcp": {
-      "command": "curl",
+    "tanuki-wordpress": {
+      "command": "cmd",
       "args": [
-        "-N",
-        "-H", "Authorization: Bearer YOUR_API_KEY",
-        "https://wordpress-mcp.onrender.com/sse-cursor"
+        "/c",
+        "npx",
+        "-y",
+        "@smithery/cli@latest",
+        "run",
+        "remote",
+        "--url",
+        "https://wordpress-mcp.onrender.com/sse-cursor",
+        "--key",
+        "YOUR_API_KEY_HERE"
       ]
     }
   }
 }
 ```
 
-Replace `YOUR_API_KEY` with your provided API key, save the file, and restart Claude Desktop.
+3. Restart Cursor
+4. Open Cursor chat and ask it to use the WordPress tools
 
-Once configured, you can ask Claude to perform WordPress and Divi tasks.
+### Using with Smithery
 
-### 4. Connect to Cursor IDE
+TanukiMCP is available on Smithery! You can use it directly with:
 
-To add our WordPress automation tools to Cursor:
-
-1. Open Cursor IDE
-2. Go to Settings > MCP Configuration
-3. Add the following to your MCP configuration:
-
-```json
-{
-  "mcpServers": {
-    "wordpress-mcp": {
-      "url": "https://wordpress-mcp.onrender.com/sse-cursor",
-      "apiKey": "YOUR_API_KEY"
-    }
-  }
-}
+```
+npx @smithery/cli run @tanuki/wordpress-mcp
 ```
 
-4. Replace `YOUR_API_KEY` with your provided API key
-5. Restart Cursor
+### Self-hosting
 
-Now you can ask the Cursor AI assistant to perform WordPress and Divi automation tasks.
+You can deploy this MCP server to your own infrastructure:
 
-## MCP Protocol Implementation
+1. Clone this repository
+2. Run `npm install`
+3. Set the required environment variables (see below)
+4. Run `npm start`
 
-This server implements the Model Context Protocol (MCP) with Server-Sent Events (SSE) for streaming responses, following the MCP protocol flow:
+### 1. Prepare Your WordPress Site
 
-1. Client connects to `/sse-cursor` to establish an SSE connection
-2. Server responds with an event containing the message endpoint: `/message?sessionId=<UUID>`
-3. Client sends JSON-RPC requests to the message endpoint
-4. Server responds with a minimal HTTP acknowledgment and sends the actual response via the SSE channel
+Before connecting to WordPress:
 
-Supported JSON-RPC methods:
-- `initialize` - Initialize the MCP session
-- `tools/list` - Get a list of available WordPress tools
-- `tools/call` - Call a WordPress tool with parameters
-- `notifications/initialized` - Acknowledge client ready state
+### 2. Prepare Your WordPress Site
 
-This implementation is compatible with standard MCP protocol clients like Claude Desktop and Cursor IDE.
+Before connecting your WordPress site to TanukiMCP:
+
+1. Have an active WordPress site with admin access
+2. Generate an Application Password:
+   - Log in to your WordPress admin
+   - Go to Users → Profile
+   - Scroll to "Application Passwords"
+   - Enter a name for the application (e.g., "TanukiMCP")
+   - Click "Add New Application Password"
+   - Copy the generated password for later use
+
+### 3. Connect Your WordPress Site
+
+To connect your WordPress site to TanukiMCP:
+
+1. Log in to your TanukiMCP dashboard
+2. Click "Connect WordPress Site"
+3. Enter your WordPress site URL
+4. Enter your WordPress username and the application password you generated
+5. Click "Connect Site"
+
+Once connected, your WordPress site will appear in your dashboard, and you can start creating workflows and using tools.
 
 ## Tools Available
 
 ### Planning & Strategy
-- **wordpress_business_plan**: Create business plans and strategies for WordPress sites
-- **wordpress_wireframe**: Design wireframes for WordPress site layouts
-- **wordpress_inspiration**: Generate creative ideas and examples for WordPress sites
-- **wordpress_design_document**: Create comprehensive design documentation for WordPress projects
-- **wordpress_design_tokens**: Define and manage design tokens for consistent visual styling
-- **wordpress_full_hierarchy**: Generate and visualize complete site hierarchies and structures
-- **wordpress_theme_picker**: Compare and select WordPress themes based on requirements
-- **wordpress_modification_planner**: Plan site changes with thorough before/after documentation
-- **wordpress_sitemap_tool**: Generate and configure site sitemaps
+- **Business Plan Tool**: Create business plans and strategies for WordPress sites
+- **Wireframe Tool**: Design wireframes for WordPress site layouts
+- **Inspiration Tool**: Generate creative ideas and examples for WordPress sites
+- **Design Document Tool**: Create comprehensive design documentation for WordPress projects
+- **Design Tokens Tool**: Define and manage design tokens for consistent visual styling
+- **Full Hierarchy Tool**: Generate and visualize complete site hierarchies and structures
+- **Theme Picker Tool**: Compare and select WordPress themes based on requirements
+- **Modification Planner**: Plan site changes with thorough before/after documentation
+- **Sitemap Tool**: Generate and configure site sitemaps
 
-### WordPress Core
-- **wordpress_site_info**: Get information about the WordPress site
-- **wordpress_auth_manager**: Handle WordPress authentication
-- **wordpress_create_page**: Create pages in WordPress
-- **wordpress_content_manager**: Manage WordPress content (pages, posts, custom post types)
-- **wordpress_user_manager**: Manage WordPress users and roles
-- **wordpress_plugin_manager**: Install, activate, and configure plugins
-- **wordpress_settings_manager**: Configure WordPress site settings
-- **wordpress_build_site**: Comprehensive tool for building complete WordPress sites
-- **wordpress_configuration**: Configure WordPress general settings and options
-- **wordpress_implement_modification**: Apply planned modifications to WordPress sites
-
-### Divi Builder
-- **wordpress_divi_builder**: Advanced page building with the Divi framework
-- **wordpress_theme_customizer**: Customize WordPress themes
-- **wordpress_theme_manager**: Manage WordPress themes
-
-### Site Structure
-- **wordpress_menu_manager**: Manage WordPress menus
-- **wordpress_widget_manager**: Manage WordPress widgets
-- **wordpress_media_manager**: Manage WordPress media library
-- **wordpress_navigation_optimizer**: Analyze and optimize site navigation
-
-### E-commerce
-- **wordpress_woocommerce_manager**: Set up and manage WooCommerce stores
-
-### Location Directory
-- **wordpress_geodirectory_tool**: Create and manage location-based directories
+### Execution Tools
+- **Site Info Tool**: Get information about the WordPress site
+- **Content Manager**: Manage WordPress content (pages, posts, custom post types)
+- **User Manager**: Manage WordPress users and roles
+- **Plugin Manager**: Install, activate, and configure plugins
+- **Settings Manager**: Configure WordPress site settings
+- **Build Site Tool**: Comprehensive tool for building complete WordPress sites
+- **Configuration Tool**: Configure WordPress general settings and options
+- **Implement Modification Tool**: Apply planned modifications to WordPress sites
+- **Theme Customizer**: Customize WordPress themes
+- **Theme Manager**: Manage WordPress themes
+- **Menu Manager**: Manage WordPress menus
+- **Widget Manager**: Manage WordPress widgets
+- **Media Manager**: Manage WordPress media library
+- **WooCommerce Manager**: Set up and manage WooCommerce stores
 
 ### Analysis & Optimization
-- **wordpress_design_analyzer**: Analyze site design and suggest improvements
-- **wordpress_content_audit**: Audit site content for quality and consistency
-- **wordpress_site_polisher**: Apply finishing touches and overall improvements
-- **wordpress_seo_manager**: Optimize site for search engines
-- **wordpress_user_journey_mapper**: Map and optimize user flows through the site
-- **wordpress_authenticated_user_analyzer**: Analyze user behavior patterns
-- **wordpress_form_analysis**: Create and optimize forms
+- **Design Analyzer**: Analyze site design and suggest improvements
+- **Content Audit Tool**: Audit site content for quality and consistency
+- **Site Polisher**: Apply finishing touches and overall improvements
+- **SEO Manager**: Optimize site for search engines
+- **User Journey Mapper**: Map and optimize user flows through the site
+- **Navigation Optimizer**: Analyze and optimize site navigation
+- **Form Analysis Tool**: Create and optimize forms
 
-## Using the Service
+## Using the Platform
 
-After connecting Claude Desktop or Cursor to our server, you can instruct the AI to interact with your WordPress site using natural language. For example:
+The TanukiMCP platform provides three main ways to automate your WordPress site:
 
-- "Create a new about page with three sections"
-- "Set up a WooCommerce store with product categories for clothing"
-- "Design a professional homepage using Divi with a hero section"
-- "Audit my site content and suggest SEO improvements"
+### 1. Ready-to-Use Workflows
 
-The AI will use our specialized WordPress tools to execute these tasks.
+Browse and use our pre-built workflows for common tasks:
+
+- Homepage redesign
+- E-commerce setup
+- Content refresh
+- SEO optimization
+- Media library cleanup
+- And many more
+
+### 2. Custom Workflow Builder
+
+Create your own custom workflows by combining tools in a sequential process:
+
+1. Select your target WordPress site
+2. Choose tools from our extensive collection
+3. Configure each step with specific parameters
+4. Save your workflow for future use
+5. Run the workflow and monitor progress in real-time
+
+### 3. Direct Tool Access
+
+Use individual tools directly for specific tasks:
+
+1. Select the tool you need
+2. Configure the tool parameters
+3. Run the tool and see the results immediately
+
+## Live Preview Feature
+
+Our unique Live Preview feature allows you to see changes as they happen:
+
+- Watch the AI make changes to your site in real-time
+- Approve, modify, or reject suggested changes
+- Choose from different view modes (visual editor, code view, mobile view)
+- Compare before/after states
+- Ensure complete control over the automation process
 
 ## Troubleshooting
 
-### Claude Desktop Issues
+If you encounter issues with TanukiMCP:
 
-If you're experiencing problems with Claude Desktop:
+1. **Connection Issues**: Verify your WordPress site is accessible and the application password is correct
+2. **Workflow Errors**: Check the workflow logs for specific error messages
+3. **Tool Compatibility**: Some tools may require specific WordPress plugins or configurations
+4. **Browser Compatibility**: Ensure you're using a modern browser (Chrome, Firefox, Safari, Edge)
+5. **Clear Cache**: Try clearing your browser cache if the interface appears broken
 
-1. **Configuration Errors**: Make sure your `claude_desktop_config.json` is properly formatted with no syntax errors
-2. **Command Field Error**: If you get an "invalid_type" error for the "command" field, try the alternative configuration method (Option 2)
-3. **Restart Required**: Always restart Claude Desktop completely after configuration changes
-4. **Check Logs**: Look at Claude Desktop logs to find specific error messages:
-   - MacOS: `~/Library/Logs/Claude/mcp*.log`
-   - Windows: `%APPDATA%\Claude\logs\mcp*.log`
+## Environment Variables
 
-### Cursor IDE Issues
+The TanukiMCP server requires the following environment variables:
 
-If tools aren't showing up in Cursor IDE:
-
-1. **Refresh MCP Servers**: In Cursor, go to Settings > MCP and click the refresh button
-2. **Prompt the AI**: Sometimes you need to specifically ask the AI to use WordPress tools
-3. **Check Configuration**: Verify your MCP configuration has the correct URL and API key
-4. **Verify API Key**: Ensure your API key is active and properly formatted
-5. **Restart Cursor**: Close and reopen Cursor completely after configuration changes
-
-### General Connection Issues
-
-If you're still having trouble connecting:
-
-1. **Server Status**: The server might be temporarily down or restarting; try again later
-2. **Network Issues**: Check your internet connection and ensure your firewall isn't blocking the connection
-3. **API Rate Limits**: You might have exceeded usage limits; contact support for assistance
+```
+WP_SITE_URL=https://yourwordpresssite.com
+WP_USERNAME=your_admin_username
+WP_APP_PASSWORD=your_app_password
+PORT=3001 (optional, defaults to 3001)
+REQUIRE_API_KEY=false (optional, set to true in production)
+HEADLESS=true (optional, for browser automation)
+```
 
 ## Support
 
-For assistance with the WordPress MCP Server, please contact our support team. 
+For assistance with TanukiMCP:
+
+- **GitHub Issues**: Open an issue on our GitHub repository
+- **Email Support**: Contact support@tanukimcp.com
+
+## Pricing
+
+TanukiMCP offers flexible pricing plans to suit different needs. Visit [tanukimcp.com/pricing](https://tanukimcp.com/pricing) for current pricing information.
+
+- **Starter**: For individuals with a single WordPress site
+- **Business**: For agencies and businesses with multiple WordPress sites
+- **Enterprise**: Custom solutions for large organizations
+
+All plans include access to our core automation tools, with higher tiers offering more workflows, sites, and advanced features. 
