@@ -236,13 +236,13 @@ If you encounter issues with TanukiMCP:
 
 ## Environment Variables
 
-The TanukiMCP server requires the following environment variables:
+The TanukiMCP server accepts the following environment variables:
 
 ```
-WP_SITE_URL=https://yourwordpresssite.com
-WP_USERNAME=your_admin_username
-WP_APP_PASSWORD=your_app_password
+# Required Configuration
 TANUKIMCP_MASTER_KEY=your_master_api_key
+
+# Optional Server Configuration
 PORT=3001 (optional, defaults to 3001)
 REQUIRE_API_KEY=true (recommended for production)
 HEADLESS=true (optional, for browser automation)
@@ -250,7 +250,7 @@ CORS_ALLOW_ORIGIN=* (allows requests from any origin)
 CORS_ALLOW_METHODS=GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS
 CORS_ALLOW_HEADERS=Content-Type,Authorization,Accept,Origin,X-Requested-With,X-Api-Key
 
-# OpenAI API Configuration
+# OpenAI API Configuration (Required for AI features)
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-4.1
 OPENAI_ADVANCED_MODEL=gpt-4.1
@@ -264,6 +264,8 @@ OPENAI_MAX_CONTEXT_TOKENS=128000
 ANALYTICS_SAVE_INTERVAL_MS=300000
 ANALYTICS_DETAILED_LOGGING=false
 ```
+
+> **Important:** WordPress credentials (site URL, username, app password) are provided per-request by the TanukiMCP Dashboard plugin and should NOT be set as environment variables in production deployments. The server expects these credentials in the request body for each API call.
 
 ## Authentication
 

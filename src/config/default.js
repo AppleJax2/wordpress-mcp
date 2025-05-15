@@ -7,6 +7,7 @@ module.exports = {
     siteUrl: process.env.WP_SITE_URL || 'https://example.com',
     username: process.env.WP_USERNAME || '',
     appPassword: process.env.WP_APP_PASSWORD || '',
+    mainPassword: process.env.WP_MAIN_PASSWORD || '',
     adminPath: '/wp-admin'
   },
   

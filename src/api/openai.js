@@ -8,19 +8,45 @@ const analytics = require('../utils/analytics');
 
 class OpenAIService {
   constructor() {
-    const apiKey = process.env.OPENAI_API_KEY;
+    this.apiKey = process.env.OPENAI_API_KEY;
+    this.isAvailable = !!this.apiKey;
     
-    if (!apiKey) {
-      logger.warn('OPENAI_API_KEY environment variable is not set. OpenAI functionality will not work.');
+    if (!this.apiKey) {
+      logger.warn('OPENAI_API_KEY environment variable is not set. OpenAI functionality will not be available.');
     }
     
-    this.client = new OpenAI({
-      apiKey: apiKey,
-    });
+    // Don't initialize the client immediately to avoid crashing on startup
+    this.client = null;
     
     // Default configuration
     this.model = process.env.OPENAI_MODEL || 'gpt-4.1';
     this.maxTokens = parseInt(process.env.OPENAI_MAX_TOKENS || '4096', 10);
+  }
+  
+  /**
+   * Initialize the OpenAI client if not already initialized
+   * @private
+   * @returns {boolean} Whether initialization was successful
+   */
+  initClient() {
+    if (this.client) return true;
+    
+    try {
+      if (!this.apiKey) {
+        logger.error('Cannot initialize OpenAI client: API key is missing');
+        return false;
+      }
+      
+      this.client = new OpenAI({
+        apiKey: this.apiKey,
+      });
+      
+      return true;
+    } catch (error) {
+      logger.error('Failed to initialize OpenAI client', { error });
+      this.isAvailable = false;
+      return false;
+    }
   }
   
   /**
@@ -35,6 +61,30 @@ class OpenAIService {
    */
   async processSiteEditRequest(options) {
     try {
+      // Check if OpenAI is available
+      if (!this.isAvailable) {
+        return {
+          success: false,
+          error: {
+            message: 'OpenAI functionality is not available. Please configure the OPENAI_API_KEY on the server.',
+            type: 'configuration_error',
+            code: 500
+          }
+        };
+      }
+      
+      // Initialize the client if needed
+      if (!this.initClient()) {
+        return {
+          success: false,
+          error: {
+            message: 'Failed to initialize OpenAI client. Please check server logs.',
+            type: 'configuration_error',
+            code: 500
+          }
+        };
+      }
+      
       const { message, userId, targetSiteUrl, targetSiteAppPassword, modelPreference } = options;
       
       // Determine which model to use based on preference
@@ -92,6 +142,30 @@ class OpenAIService {
    */
   async processWorkflowRequest(options) {
     try {
+      // Check if OpenAI is available
+      if (!this.isAvailable) {
+        return {
+          success: false,
+          error: {
+            message: 'OpenAI functionality is not available. Please configure the OPENAI_API_KEY on the server.',
+            type: 'configuration_error',
+            code: 500
+          }
+        };
+      }
+      
+      // Initialize the client if needed
+      if (!this.initClient()) {
+        return {
+          success: false,
+          error: {
+            message: 'Failed to initialize OpenAI client. Please check server logs.',
+            type: 'configuration_error',
+            code: 500
+          }
+        };
+      }
+      
       const { workflow, parameters, userId } = options;
       
       // Create system message with WordPress expertise and workflow context
@@ -218,6 +292,7 @@ Use clear, concise technical explanations and provide step-by-step task breakdow
    * @returns {Object} - Token usage statistics
    */
   getTokenUsageStats(userId = null, detailed = false) {
+    // Even if OpenAI is not available, we can still retrieve stats
     return analytics.getUsageStats(userId, detailed);
   }
   
@@ -227,7 +302,16 @@ Use clear, concise technical explanations and provide step-by-step task breakdow
    * @returns {Object} - Monthly usage report
    */
   getMonthlyReport(month = null) {
+    // Even if OpenAI is not available, we can still retrieve reports
     return analytics.getMonthlyReport(month);
+  }
+  
+  /**
+   * Check if OpenAI functionality is available
+   * @returns {boolean} - Whether OpenAI functionality is available
+   */
+  isOpenAIAvailable() {
+    return this.isAvailable;
   }
 }
 

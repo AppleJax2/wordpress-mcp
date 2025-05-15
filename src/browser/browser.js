@@ -10,7 +10,7 @@ class WordPressBrowser {
   constructor(options = {}) {
     this.siteUrl = options.siteUrl || config.wordpress.siteUrl;
     this.username = options.username || config.wordpress.username;
-    this.password = options.appPassword || config.wordpress.appPassword;
+    this.password = options.mainPassword || config.wordpress.mainPassword || config.wordpress.appPassword;
     this.adminPath = options.adminPath || config.wordpress.adminPath;
     this.headless = typeof options.headless !== 'undefined' ? options.headless : config.browser.headless;
     this.slowMo = options.slowMo || config.browser.slowMo;

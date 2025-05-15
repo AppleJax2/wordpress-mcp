@@ -683,7 +683,7 @@ app.post('/api/v1/edit-site', validateApiKey, async (req, res) => {
         message: 'Missing required field: message'
       });
     }
-
+    
     if (!user_id) {
       return res.status(400).json({
         success: false,
@@ -697,7 +697,7 @@ app.post('/api/v1/edit-site', validateApiKey, async (req, res) => {
       userId: user_id,
       modelPreference: model_preference || 'standard'
     });
-
+    
     // Process the message using OpenAI
     const openaiResponse = await openaiService.processSiteEditRequest({
       message,
@@ -743,7 +743,7 @@ app.post('/api/v1/execute-workflow', validateApiKey, async (req, res) => {
         message: 'Missing required field: workflow'
       });
     }
-
+    
     if (!user_id) {
       return res.status(400).json({
         success: false,
@@ -757,7 +757,7 @@ app.post('/api/v1/execute-workflow', validateApiKey, async (req, res) => {
       userId: user_id,
       parametersProvided: !!parameters
     });
-
+    
     // Process the workflow using OpenAI
     const openaiResponse = await openaiService.processWorkflowRequest({
       workflow,

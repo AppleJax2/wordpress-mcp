@@ -16,12 +16,10 @@ const config = {
 // Validate required configuration
 const { wordpress, connections } = config;
 if (!wordpress.siteUrl) {
-  console.warn('WARNING: WordPress site URL is not configured');
+  console.warn('WARNING: WP_SITE_URL not set, using default:', wordpress.siteUrl);
 }
 
-if (!wordpress.username || !wordpress.appPassword) {
-  console.warn('WARNING: WordPress credentials are not configured');
-}
+// WordPress credentials warning suppressed since they are provided per-request by the plugin
 
 // Log API authentication status
 if (config.auth.requireApiKey) {
