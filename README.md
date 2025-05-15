@@ -14,6 +14,37 @@ Key benefits:
 - Multi-site management
 - Intuitive visual interface
 
+## TanukiMCP Dashboard Plugin Integration
+
+The TanukiMCP Dashboard Plugin provides a seamless way to integrate TanukiMCP capabilities directly within your WordPress admin dashboard. Here's how to set it up:
+
+### Configuration
+
+1. Install and activate the TanukiMCP Dashboard Plugin in your WordPress site
+2. Navigate to the TanukiMCP settings page in your WordPress admin
+3. Configure the following settings:
+   - **API Endpoint**: Set to `https://wordpress-mcp.onrender.com/api/v1/`
+   - **API Key**: Enter the master key `3c9a406341969edf38b3d6d0c8f7685c`
+
+### Available Endpoints
+
+The TanukiMCP server exposes these REST endpoints for the dashboard plugin:
+
+- `POST /api/v1/edit-site` - For sending site editor messages
+- `POST /api/v1/execute-workflow` - For executing workflows
+
+### Authentication
+
+All requests from the dashboard plugin must include:
+- `Authorization: Bearer 3c9a406341969edf38b3d6d0c8f7685c` header
+- `Content-Type: application/json` header
+
+### Response Format
+
+All endpoints return responses in this JSON format:
+- Success: `{ "success": true, "data": {...} }`
+- Error: `{ "success": false, "message": "Error message" }`
+
 ## Features
 
 - WordPress site management tools
@@ -211,10 +242,98 @@ The TanukiMCP server requires the following environment variables:
 WP_SITE_URL=https://yourwordpresssite.com
 WP_USERNAME=your_admin_username
 WP_APP_PASSWORD=your_app_password
+TANUKIMCP_MASTER_KEY=your_master_api_key
 PORT=3001 (optional, defaults to 3001)
-REQUIRE_API_KEY=false (optional, set to true in production)
+REQUIRE_API_KEY=true (recommended for production)
 HEADLESS=true (optional, for browser automation)
+CORS_ALLOW_ORIGIN=* (allows requests from any origin)
+CORS_ALLOW_METHODS=GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS
+CORS_ALLOW_HEADERS=Content-Type,Authorization,Accept,Origin,X-Requested-With,X-Api-Key
+
+# OpenAI API Configuration
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-4.1
+OPENAI_ADVANCED_MODEL=gpt-4.1
+OPENAI_BASIC_MODEL=gpt-4.1-mini
+OPENAI_NANO_MODEL=gpt-4.1-nano
+OPENAI_MAX_TOKENS=4096
+OPENAI_TEMPERATURE=0.7
+OPENAI_MAX_CONTEXT_TOKENS=128000
+
+# Analytics Configuration
+ANALYTICS_SAVE_INTERVAL_MS=300000
+ANALYTICS_DETAILED_LOGGING=false
 ```
+
+## Authentication
+
+TanukiMCP uses a simplified authentication model:
+
+1. **Master API Key**: All requests must include the master API key in the Authorization header:
+   ```
+   Authorization: Bearer 3c9a406341969edf38b3d6d0c8f7685c
+   ```
+
+2. **User Identification**: Each request should include the WordPress user ID in the request body:
+   ```json
+   {
+     "user_id": 123,
+     "message": "Your request message"
+   }
+   ```
+
+This approach simplifies authentication while still allowing usage tracking per WordPress user.
+
+## OpenAI API Integration
+
+TanukiMCP integrates with OpenAI's GPT-4.1 models to provide AI-powered WordPress site management. The server supports multiple model tiers:
+
+- **GPT-4.1** (Default): The most capable model for complex WordPress tasks and coding
+- **GPT-4.1 Mini**: A faster, more cost-effective model for simpler tasks
+- **GPT-4.1 Nano**: The fastest, most economical option for basic tasks
+
+The API integration provides:
+
+1. WordPress expertise with deep knowledge of themes, plugins, and core functionality
+2. Automated site editing and content management
+3. Workflow automation for common WordPress tasks
+4. Token usage tracking and analytics
+
+Users can specify model preferences in their requests with the `model_preference` parameter:
+- `advanced`: Uses the GPT-4.1 model
+- `basic`: Uses the GPT-4.1-mini model
+
+## API Endpoints
+
+### WordPress Dashboard Plugin Endpoints
+
+- `POST /api/v1/edit-site` - For sending site editor messages
+  ```json
+  {
+    "message": "User message content",
+    "target_site_url": "https://example.com",
+    "target_site_app_password": "xxxx xxxx xxxx xxxx",
+    "user_id": 123,
+    "model_preference": "advanced"
+  }
+  ```
+
+- `POST /api/v1/execute-workflow` - For executing workflows
+  ```json
+  {
+    "workflow": "optimize_images",
+    "parameters": {
+      "quality": 85,
+      "resize": true
+    },
+    "user_id": 123
+  }
+  ```
+
+### Analytics Endpoints
+
+- `GET /api/v1/analytics/token-usage?user_id=123&detailed=true` - View token usage statistics
+- `GET /api/v1/analytics/monthly-report?month=2023-01` - View monthly token usage report
 
 ## Support
 

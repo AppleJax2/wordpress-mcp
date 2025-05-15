@@ -13,6 +13,8 @@ const {
 } = require('./tools');
 const config = require('./config');
 const logger = require('./utils/logger');
+const connectionManager = require('./api/connection-manager');
+const openaiService = require('./api/openai');
 
 // Create Express app
 const app = express();
@@ -42,38 +44,31 @@ const validateApiKey = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ 
-      error: 'Missing API key. Please provide a valid API key in the Authorization header.'
+      success: false,
+      message: 'Missing API key. Please provide a valid API key in the Authorization header.'
     });
   }
 
   const apiKey = authHeader.split('Bearer ')[1];
+  const masterKey = process.env.TANUKIMCP_MASTER_KEY;
 
-  // Validate API key format
-  if (!apiKey.startsWith('tn_live_')) {
+  // Validate against the master key
+  if (apiKey !== masterKey) {
     return res.status(401).json({ 
-      error: 'Invalid API key format. API keys should start with tn_live_.'
+      success: false,
+      message: 'Invalid API key.'
     });
   }
-
-  // TODO: In production, this would validate the API key against the database
-  // For now, we're accepting all properly formatted keys for development
-  
-  // In production, we would:
-  // 1. Check if the key exists in the database (hashed)
-  // 2. Verify if the user account is active
-  // 3. Check if the subscription is valid
-  // 4. Track API usage for billing
-  // 5. Apply rate limiting
 
   // Attach user info to request for later use
   req.user = {
     apiKey: apiKey,
-    plan: 'development',
+    plan: 'standard',
     operationsRemaining: 1000
   };
 
   // Track API usage
-  logger.info(`API request with key: ${apiKey.substring(0, 8)}...`);
+  logger.info(`API request with master key`);
   
   next();
 };
@@ -116,7 +111,10 @@ app.get('/tools/:name', validateApiKey, (req, res) => {
   const tool = wordpressTools.find(t => t.name === name);
   
   if (!tool) {
-    return res.status(404).json({ error: `Tool '${name}' not found` });
+    return res.status(404).json({ 
+      success: false, 
+      message: `Tool '${name}' not found` 
+    });
   }
   
   // Return the full tool metadata
@@ -182,12 +180,18 @@ app.post('/message', (req, res) => {
   
   const sessionId = req.query.sessionId;
   if (!sessionId) {
-    return res.status(400).json({ error: 'Missing sessionId in ?sessionId=...' });
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Missing sessionId in ?sessionId=...' 
+    });
   }
   
   const sessionData = sessions.get(sessionId);
   if (!sessionData) {
-    return res.status(404).json({ error: 'No SSE session with that sessionId' });
+    return res.status(404).json({ 
+      success: false, 
+      message: 'No SSE session with that sessionId' 
+    });
   }
   
   const rpc = req.body;
@@ -655,20 +659,187 @@ app.post('/stream', validateApiKey, async (req, res) => {
   }
 });
 
+//-------------------------------------------------------------------------
+// WordPress Dashboard Plugin REST API Endpoints
+//-------------------------------------------------------------------------
+
+// Edit Site endpoint - For handling site editor messages
+app.post('/api/v1/edit-site', validateApiKey, async (req, res) => {
+  try {
+    logger.info('Received edit-site request');
+    
+    // Validate request body
+    const { 
+      message, 
+      target_site_url, 
+      target_site_app_password, 
+      user_id, 
+      model_preference 
+    } = req.body;
+    
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required field: message'
+      });
+    }
+
+    if (!user_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required field: user_id'
+      });
+    }
+    
+    // Log the request with user ID
+    logger.info('Processing edit-site request', {
+      messageLength: message.length,
+      userId: user_id,
+      modelPreference: model_preference || 'standard'
+    });
+
+    // Process the message using OpenAI
+    const openaiResponse = await openaiService.processSiteEditRequest({
+      message,
+      userId: user_id,
+      targetSiteUrl: target_site_url,
+      targetSiteAppPassword: target_site_app_password,
+      modelPreference: model_preference || 'standard'
+    });
+
+    if (!openaiResponse.success) {
+      return res.status(500).json({
+        success: false,
+        message: openaiResponse.error.message || 'An error occurred processing your request',
+        error: openaiResponse.error
+      });
+    }
+    
+    // Return the OpenAI response
+    return res.json({
+      success: true,
+      data: openaiResponse.data
+    });
+  } catch (error) {
+    logger.error('Error processing edit-site request', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'An error occurred while processing your request'
+    });
+  }
+});
+
+// Execute Workflow endpoint - For workflow execution
+app.post('/api/v1/execute-workflow', validateApiKey, async (req, res) => {
+  try {
+    logger.info('Received execute-workflow request');
+    
+    // Validate request body
+    const { workflow, parameters, user_id } = req.body;
+    
+    if (!workflow) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required field: workflow'
+      });
+    }
+
+    if (!user_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required field: user_id'
+      });
+    }
+    
+    // Log the request with user ID
+    logger.info('Processing execute-workflow request', {
+      workflow,
+      userId: user_id,
+      parametersProvided: !!parameters
+    });
+
+    // Process the workflow using OpenAI
+    const openaiResponse = await openaiService.processWorkflowRequest({
+      workflow,
+      parameters,
+      userId: user_id
+    });
+
+    if (!openaiResponse.success) {
+      return res.status(500).json({
+        success: false,
+        message: openaiResponse.error.message || 'An error occurred executing your workflow',
+        error: openaiResponse.error
+      });
+    }
+    
+    // Return the OpenAI response
+    return res.json({
+      success: true,
+      data: {
+        workflow,
+        status: 'completed',
+        timestamp: new Date().toISOString(),
+        result: openaiResponse.data.result,
+        usage: openaiResponse.data.usage
+      }
+    });
+  } catch (error) {
+    logger.error('Error processing execute-workflow request', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'An error occurred while processing your request'
+    });
+  }
+});
+
+// Add Analytics endpoint to view token usage
+app.get('/api/v1/analytics/token-usage', validateApiKey, (req, res) => {
+  try {
+    const userId = req.query.user_id;
+    const detailed = req.query.detailed === 'true';
+    const stats = openaiService.getTokenUsageStats(userId || null, detailed);
+    
+    return res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    logger.error('Error fetching token usage analytics', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'An error occurred while fetching analytics'
+    });
+  }
+});
+
+// Add Monthly report endpoint
+app.get('/api/v1/analytics/monthly-report', validateApiKey, (req, res) => {
+  try {
+    const month = req.query.month; // Format: YYYY-MM
+    const report = openaiService.getMonthlyReport(month);
+    
+    return res.json({
+      success: true,
+      data: report
+    });
+  } catch (error) {
+    logger.error('Error fetching monthly analytics report', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'An error occurred while fetching the monthly report'
+    });
+  }
+});
+
 // API key management endpoint - for testing during development
 if (process.env.NODE_ENV !== 'production') {
   app.post('/dev/generate-api-key', (req, res) => {
-    const { label } = req.body || {};
-    
-    // Generate a new API key
-    const keyId = uuidv4().replace(/-/g, '').substring(0, 24);
-    const apiKey = `tn_live_${keyId}`;
-    
     res.json({
       success: true,
-      apiKey,
-      label: label || 'Development Key',
-      message: 'This key is for development purposes only. In production, keys will be managed through the Tanuki dashboard.'
+      apiKey: process.env.TANUKIMCP_MASTER_KEY,
+      label: 'Master Key',
+      message: 'This is the master API key configured in your environment variables.'
     });
   });
 }

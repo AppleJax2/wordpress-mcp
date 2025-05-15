@@ -46,6 +46,18 @@ module.exports = {
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '60', 10), // 60 requests per minute
   },
   
+  // OpenAI API Configuration
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY || '',
+    defaultModel: process.env.OPENAI_MODEL || 'gpt-4.1',
+    advancedModel: process.env.OPENAI_ADVANCED_MODEL || 'gpt-4.1',
+    basicModel: process.env.OPENAI_BASIC_MODEL || 'gpt-4.1-mini',
+    nanoModel: process.env.OPENAI_NANO_MODEL || 'gpt-4.1-nano',
+    maxTokens: parseInt(process.env.OPENAI_MAX_TOKENS || '4096', 10),
+    temperature: parseFloat(process.env.OPENAI_TEMPERATURE || '0.7'),
+    maxContextTokens: parseInt(process.env.OPENAI_MAX_CONTEXT_TOKENS || '128000', 10),
+  },
+  
   // Subscription Plans
   plans: {
     shapeshiftBasic: {
@@ -82,5 +94,12 @@ module.exports = {
   logging: {
     level: process.env.LOG_LEVEL || 'info',
     format: process.env.NODE_ENV === 'production' ? 'json' : 'console'
+  },
+  
+  // Analytics Configuration
+  analytics: {
+    trackTokenUsage: true,
+    saveIntervalMs: parseInt(process.env.ANALYTICS_SAVE_INTERVAL_MS || '300000', 10), // 5 minutes in ms
+    detailedLogging: process.env.ANALYTICS_DETAILED_LOGGING === 'true',
   }
 }; 

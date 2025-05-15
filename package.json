@@ -32,6 +32,7 @@
     "form-data": "^4.0.0",
     "jsdom": "^26.1.0",
     "node-fetch": "^2.7.0",
+    "openai": "^4.24.0",
     "puppeteer": "^21.5.2",
     "uuid": "^9.0.1",
     "winston": "^3.11.0"
