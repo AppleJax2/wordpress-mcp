@@ -15,7 +15,13 @@ RUN apk update && apk add --no-cache \
     procps \
     dumb-init \
     fontconfig \
-    udev
+    udev \
+    python3 \
+    make \
+    g++
+
+# Alias python to python3 for node-gyp compatibility
+RUN ln -sf python3 /usr/bin/python
 
 # Tell Puppeteer to use the installed Chromium and reduce resource usage
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
