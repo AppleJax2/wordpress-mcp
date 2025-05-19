@@ -134,3 +134,78 @@ class AuthManagerTool extends BaseTool {
           success: false,
           data: {
             message: `Invalid credentials: ${testResult.data.message}`
+          }
+        };
+      }
+      
+      // Store the credentials
+      await this.saveCredentials(credentials);
+      
+      return {
+        success: true,
+        data: {
+          message: 'Credentials stored successfully'
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        data: {
+          message: `Error storing credentials: ${error.message}`
+        }
+      };
+    }
+  }
+  
+  /**
+   * Clear stored credentials
+   */
+  async clearCredentials() {
+    try {
+      await this.deleteCredentials();
+      
+      return {
+        success: true,
+        data: {
+          message: 'Credentials cleared successfully'
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        data: {
+          message: `Error clearing credentials: ${error.message}`
+        }
+      };
+    }
+  }
+  
+  /**
+   * Test connection to WordPress site
+   */
+  async testConnection(credentials) {
+    try {
+      // Create a new API instance
+      this.api = new WordPressAPI(credentials.siteUrl);
+      
+      // Test the connection
+      const testResult = await this.api.testConnection();
+      
+      return {
+        success: testResult.success,
+        data: {
+          message: testResult.data.message
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        data: {
+          message: `Error testing connection: ${error.message}`
+        }
+      };
+    }
+  }
+}
+
+module.exports = AuthManagerTool;
