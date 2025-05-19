@@ -2,7 +2,7 @@
  * Design Tokens Tool
  * Manages design tokens for WordPress themes (theme.json)
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 
 class DesignTokensTool extends BaseTool {
