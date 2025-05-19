@@ -18,7 +18,20 @@ RUN apk update && apk add --no-cache \
     udev \
     python3 \
     make \
-    g++
+    g++ \
+    cairo \
+    cairo-dev \
+    pango \
+    pango-dev \
+    jpeg \
+    giflib \
+    pixman \
+    pixman-dev \
+    pkgconfig \
+    libpng \
+    libpng-dev \
+    musl-dev \
+    build-base
 
 # Alias python to python3 for node-gyp compatibility
 RUN ln -sf python3 /usr/bin/python
