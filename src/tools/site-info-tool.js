@@ -5,10 +5,17 @@
 const BaseTool = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 const WordPressBrowser = require('../browser/browser');
+const crypto = require('crypto');
+const config = require('../config');
 
 class SiteInfoTool extends BaseTool {
   constructor() {
     super('wordpress_site_info', 'Get comprehensive information about the WordPress site');
+    this.registerMethod('generatePreviewUrl', this.generatePreviewUrl.bind(this));
+    this.registerMethod('getSiteHealthMetrics', this.getSiteHealthMetrics.bind(this));
+    this.registerMethod('getPerformanceBenchmarks', this.getPerformanceBenchmarks.bind(this));
+    this.registerMethod('detectSiteChanges', this.detectSiteChanges.bind(this));
+    this.registerMethod('getHostingEnvironmentInfo', this.getHostingEnvironmentInfo.bind(this));
   }
   
   /**
@@ -243,10 +250,297 @@ class SiteInfoTool extends BaseTool {
   }
   
   /**
+   * Generate a secure, time-limited live preview URL for the WordPress site
+   * @param {Object} params - Parameters for preview URL generation
+   * @param {string} [params.siteUrl] - WordPress site URL (defaults to detected site)
+   * @param {string} [params.userId] - User ID for whom the preview is generated
+   * @param {number} [params.ttl] - Time to live in seconds (default: 300)
+   * @param {Object} context - Execution context (must include user and site)
+   * @returns {Object} - { success, previewUrl, expiresAt }
+   */
+  async generatePreviewUrl(params = {}, context = {}) {
+    try {
+      // Validate context
+      if (!context || !context.site || !context.user) {
+        return this.createErrorResponse('INVALID_CONTEXT', 'Context with site and user is required');
+      }
+      const siteUrl = params.siteUrl || context.site.url;
+      const userId = params.userId || context.user.user_id;
+      const ttl = Number(params.ttl) > 0 ? Number(params.ttl) : 300; // default 5 min
+      const now = Math.floor(Date.now() / 1000);
+      const expires = now + ttl;
+      // Token payload
+      const payload = {
+        site: siteUrl,
+        user: userId,
+        exp: expires
+      };
+      const payloadStr = JSON.stringify(payload);
+      // HMAC-SHA256 signature
+      const secret = process.env.TANUKIMCP_MASTER_KEY || config.wordpress.mainPassword || 'changeme';
+      const signature = crypto.createHmac('sha256', secret).update(payloadStr).digest('hex');
+      // Encode payload as base64url
+      const payloadB64 = Buffer.from(payloadStr).toString('base64url');
+      // Compose token
+      const token = `${payloadB64}.${signature}`;
+      // Compose preview URL (assume /preview endpoint on the server)
+      const previewUrl = `${siteUrl.replace(/\/$/, '')}/?tanukimcp_preview_token=${encodeURIComponent(token)}`;
+      return this.createSuccessResponse({
+        previewUrl,
+        expiresAt: new Date(expires * 1000).toISOString(),
+        token
+      }, 'Preview URL generated successfully');
+    } catch (error) {
+      return this.handleError(error, 'generatePreviewUrl');
+    }
+  }
+  
+  /**
+   * Collect comprehensive site health metrics (production quality)
+   * @returns {Promise<Object>} Site health metrics and status
+   */
+  async getSiteHealthMetrics(params = {}, context = {}) {
+    try {
+      const api = this.getApiClient();
+      const browser = this.getBrowserClient();
+      let healthData = {};
+      // 1. WordPress core version and update status
+      const siteInfo = await api.getSiteInfo();
+      healthData.wordpress = {
+        version: siteInfo.version,
+        updateAvailable: !!siteInfo.core_update,
+        coreUpdate: siteInfo.core_update || null
+      };
+      // 2. Plugin/theme update status
+      try {
+        const plugins = await api.getPlugins();
+        healthData.plugins = {
+          total: plugins.length,
+          updates: plugins.filter(p => p.update_available).map(p => ({ name: p.name, version: p.version, newVersion: p.new_version })),
+          upToDate: plugins.every(p => !p.update_available)
+        };
+      } catch (e) {
+        healthData.plugins = { error: 'Could not fetch plugin update status' };
+      }
+      try {
+        const themes = await api.getThemes();
+        healthData.themes = {
+          total: Object.keys(themes).length,
+          updates: Object.values(themes).filter(t => t.update_available).map(t => ({ name: t.name, version: t.version, newVersion: t.new_version })),
+          upToDate: Object.values(themes).every(t => !t.update_available)
+        };
+      } catch (e) {
+        healthData.themes = { error: 'Could not fetch theme update status' };
+      }
+      // 3. PHP/MySQL version, server info
+      try {
+        // Use browser automation to get environment info from /wp-admin/site-health.php
+        await browser.launch();
+        await browser.login();
+        await browser.navigateToAdminPage('/site-health.php');
+        const envInfo = await browser.page.evaluate(() => {
+          const info = {};
+          // PHP Version
+          const phpRow = Array.from(document.querySelectorAll('tr')).find(row => row.textContent.includes('PHP Version'));
+          if (phpRow) info.phpVersion = phpRow.querySelector('td').textContent.trim();
+          // MySQL Version
+          const mysqlRow = Array.from(document.querySelectorAll('tr')).find(row => row.textContent.includes('MySQL Version'));
+          if (mysqlRow) info.mysqlVersion = mysqlRow.querySelector('td').textContent.trim();
+          // Server
+          const serverRow = Array.from(document.querySelectorAll('tr')).find(row => row.textContent.includes('Server Info'));
+          if (serverRow) info.server = serverRow.querySelector('td').textContent.trim();
+          // SSL
+          const sslRow = Array.from(document.querySelectorAll('tr')).find(row => row.textContent.includes('SSL'));
+          if (sslRow) info.ssl = sslRow.querySelector('td').textContent.trim();
+          return info;
+        });
+        healthData.environment = envInfo;
+      } catch (e) {
+        healthData.environment = { error: 'Could not fetch environment info' };
+      }
+      // 4. REST API status
+      try {
+        const restStatus = await api.client.get('/wp/v2');
+        healthData.restApi = { available: true, namespaces: Object.keys(restStatus.data) };
+      } catch (e) {
+        healthData.restApi = { available: false, error: e.message };
+      }
+      // 5. WP-Cron status (check if scheduled events are running)
+      try {
+        await browser.navigateToAdminPage('/tools.php?page=site-health');
+        const cronStatus = await browser.page.evaluate(() => {
+          const cronRow = Array.from(document.querySelectorAll('tr')).find(row => row.textContent.includes('WP-Cron'));
+          if (cronRow) return cronRow.querySelector('td').textContent.trim();
+          return 'Unknown';
+        });
+        healthData.wpCron = { status: cronStatus };
+      } catch (e) {
+        healthData.wpCron = { error: 'Could not determine WP-Cron status' };
+      }
+      // 6. Site Health critical issues (from Site Health screen)
+      try {
+        await browser.navigateToAdminPage('/site-health.php');
+        const issues = await browser.page.evaluate(() => {
+          const critical = [];
+          document.querySelectorAll('.site-health-issue-critical').forEach(el => {
+            critical.push(el.textContent.trim());
+          });
+          return critical;
+        });
+        healthData.criticalIssues = issues;
+      } catch (e) {
+        healthData.criticalIssues = { error: 'Could not fetch critical issues' };
+      }
+      // 7. Sanitize and return
+      return this.createSuccessResponse(healthData, 'Site health metrics collected successfully');
+    } catch (error) {
+      return this.handleError(error, 'getSiteHealthMetrics');
+    } finally {
+      await this.releaseConnections();
+    }
+  }
+  
+  /**
+   * Collect site performance benchmarks (production quality)
+   * @returns {Promise<Object>} Site performance metrics
+   */
+  async getPerformanceBenchmarks(params = {}, context = {}) {
+    try {
+      const api = this.getApiClient();
+      const browser = this.getBrowserClient();
+      const siteInfo = await api.getSiteInfo();
+      const url = siteInfo.url;
+      let benchmarks = {};
+      // 1. Page load time (frontend)
+      try {
+        await browser.launch();
+        const start = Date.now();
+        await browser.page.goto(url, { waitUntil: 'networkidle2' });
+        const loadTime = Date.now() - start;
+        benchmarks.pageLoad = { ms: loadTime };
+      } catch (e) {
+        benchmarks.pageLoad = { error: 'Could not measure page load time' };
+      }
+      // 2. REST API response time
+      try {
+        const apiStart = Date.now();
+        await api.getSiteInfo();
+        const apiTime = Date.now() - apiStart;
+        benchmarks.apiResponse = { ms: apiTime };
+      } catch (e) {
+        benchmarks.apiResponse = { error: 'Could not measure API response time' };
+      }
+      // 3. DB query time (from Site Health screen)
+      try {
+        await browser.navigateToAdminPage('/site-health.php');
+        const dbTime = await browser.page.evaluate(() => {
+          const dbRow = Array.from(document.querySelectorAll('tr')).find(row => row.textContent.includes('Database Query Time'));
+          if (dbRow) return dbRow.querySelector('td').textContent.trim();
+          return null;
+        });
+        benchmarks.dbQuery = { value: dbTime };
+      } catch (e) {
+        benchmarks.dbQuery = { error: 'Could not measure DB query time' };
+      }
+      // 4. Sanitize and return
+      return this.createSuccessResponse(benchmarks, 'Performance benchmarks collected successfully');
+    } catch (error) {
+      return this.handleError(error, 'getPerformanceBenchmarks');
+    } finally {
+      await this.releaseConnections();
+    }
+  }
+  
+  /**
+   * Detect incremental site changes (production quality)
+   * @param {Object} params - { previousContext, currentContext, section (optional) }
+   * @returns {Promise<Object>} Site change diff
+   */
+  async detectSiteChanges(params = {}, context = {}) {
+    try {
+      const { previousContext, currentContext, section = null } = params;
+      // Validate input
+      if (!previousContext || !currentContext) {
+        return this.createErrorResponse('INVALID_PARAMETERS', 'Both previousContext and currentContext are required');
+      }
+      // Use context-manager-tool.js for diffing
+      const ContextManagerTool = require('./context-manager-tool');
+      const contextManager = new ContextManagerTool();
+      const diffParams = {
+        action: 'diffContexts',
+        left: section ? previousContext[section] : previousContext,
+        right: section ? currentContext[section] : currentContext
+      };
+      const diffResult = await contextManager.execute(diffParams, context);
+      if (!diffResult.success) {
+        return this.createErrorResponse('DIFF_ERROR', diffResult.error || 'Failed to compute diff');
+      }
+      return this.createSuccessResponse(diffResult.data, 'Site changes detected successfully');
+    } catch (error) {
+      return this.handleError(error, 'detectSiteChanges');
+    }
+  }
+  
+  /**
+   * Collect detailed hosting environment information (production quality)
+   * @returns {Promise<Object>} Hosting environment details
+   */
+  async getHostingEnvironmentInfo(params = {}, context = {}) {
+    try {
+      const api = this.getApiClient();
+      const browser = this.getBrowserClient();
+      let envInfo = {};
+      try {
+        await browser.launch();
+        await browser.login();
+        await browser.navigateToAdminPage('/site-health.php');
+        envInfo = await browser.page.evaluate(() => {
+          const info = {};
+          // Server
+          const serverRow = Array.from(document.querySelectorAll('tr')).find(row => row.textContent.includes('Server Info'));
+          if (serverRow) info.server = serverRow.querySelector('td').textContent.trim();
+          // PHP Version
+          const phpRow = Array.from(document.querySelectorAll('tr')).find(row => row.textContent.includes('PHP Version'));
+          if (phpRow) info.phpVersion = phpRow.querySelector('td').textContent.trim();
+          // PHP Extensions
+          const extRow = Array.from(document.querySelectorAll('tr')).find(row => row.textContent.includes('PHP Extensions'));
+          if (extRow) info.phpExtensions = extRow.querySelector('td').textContent.trim().split(',').map(e => e.trim());
+          // Memory Limit
+          const memRow = Array.from(document.querySelectorAll('tr')).find(row => row.textContent.includes('Memory Limit'));
+          if (memRow) info.memoryLimit = memRow.querySelector('td').textContent.trim();
+          // Max Execution Time
+          const execRow = Array.from(document.querySelectorAll('tr')).find(row => row.textContent.includes('Max Execution Time'));
+          if (execRow) info.maxExecutionTime = execRow.querySelector('td').textContent.trim();
+          // Upload Max Filesize
+          const uploadRow = Array.from(document.querySelectorAll('tr')).find(row => row.textContent.includes('Upload Max Filesize'));
+          if (uploadRow) info.uploadMaxFilesize = uploadRow.querySelector('td').textContent.trim();
+          // Post Max Size
+          const postRow = Array.from(document.querySelectorAll('tr')).find(row => row.textContent.includes('Post Max Size'));
+          if (postRow) info.postMaxSize = postRow.querySelector('td').textContent.trim();
+          // Database
+          const dbRow = Array.from(document.querySelectorAll('tr')).find(row => row.textContent.includes('Database Name'));
+          if (dbRow) info.database = dbRow.querySelector('td').textContent.trim();
+          // Disk Space
+          const diskRow = Array.from(document.querySelectorAll('tr')).find(row => row.textContent.includes('Disk Space'));
+          if (diskRow) info.diskSpace = diskRow.querySelector('td').textContent.trim();
+          return info;
+        });
+      } catch (e) {
+        envInfo = { error: 'Could not fetch hosting environment info' };
+      }
+      return this.createSuccessResponse(envInfo, 'Hosting environment info collected successfully');
+    } catch (error) {
+      return this.handleError(error, 'getHostingEnvironmentInfo');
+    } finally {
+      await this.releaseConnections();
+    }
+  }
+  
+  /**
    * Get JSON schema for MCP
    */
   getSchema() {
-    return {
+    const baseSchema = {
       type: "function",
       function: {
         name: this.name,
@@ -284,6 +578,18 @@ class SiteInfoTool extends BaseTool {
         }
       }
     };
+    // Add schema for generatePreviewUrl
+    baseSchema.function.parameters.generatePreviewUrl = {
+      type: "object",
+      description: "Generate a secure, time-limited live preview URL for the WordPress site.",
+      properties: {
+        siteUrl: { type: "string", description: "WordPress site URL (optional, defaults to context.site.url)" },
+        userId: { type: "string", description: "User ID for whom the preview is generated (optional, defaults to context.user.user_id)" },
+        ttl: { type: "number", description: "Time to live in seconds (default: 300)" }
+      },
+      required: []
+    };
+    return baseSchema;
   }
 }
 

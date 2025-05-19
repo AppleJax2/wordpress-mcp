@@ -8,6 +8,9 @@ const axios = require('axios');
 const { JSDOM } = require('jsdom'); // This would need to be installed
 const fetch = require('node-fetch');
 const puppeteer = require('puppeteer');
+const nlp = require('compromise'); // Add at the top for local NLP
+const natural = require('natural'); // Add at the top for text similarity
+const sharp = require('sharp'); // Add at the top for image analysis
 
 class ContentAuditTool extends BaseTool {
   constructor() {
@@ -39,6 +42,9 @@ class ContentAuditTool extends BaseTool {
         includeReadability: options.includeReadability !== false,
         includeSEO: options.includeSEO !== false,
         includeEngagement: options.includeEngagement !== false,
+        includeSemantics: options.includeSemantics !== false,
+        includeDuplicationCheck: options.includeDuplicationCheck !== false,
+        includeImageAnalysis: options.includeImageAnalysis !== false,
         detailLevel: options.detailLevel || 'detailed'
       };
       
@@ -195,6 +201,22 @@ class ContentAuditTool extends BaseTool {
         results.analyses.engagement = await this.analyzeEngagement(content, options.detailLevel);
       }
       
+      if (options.includeSemantics) {
+        results.analyses.semantics = await this.analyzeSemantics(content, options.detailLevel);
+      }
+      
+      if (options.includeDuplicationCheck) {
+        results.analyses.duplication = await this.detectDuplicationAndInconsistencies(content, options.detailLevel);
+      }
+      
+      if (options.includeImageAnalysis) {
+        results.analyses.images = await this.analyzeImageUsage(content, options.detailLevel);
+      }
+      
+      if (options.includeSEOGapAnalysis) {
+        results.analyses.seoGap = await this.analyzeSEOGap(content, options.detailLevel);
+      }
+      
       // Generate overall score
       results.overallScore = this.calculateOverallScore(results.analyses);
       
@@ -281,17 +303,28 @@ class ContentAuditTool extends BaseTool {
    * Calculate overall score based on individual analyses
    */
   calculateOverallScore(analyses) {
+    // Aggregate all available scores, including new analyses
     const scores = [
       analyses.quality?.score,
       analyses.readability?.score,
       analyses.seo?.score,
       analyses.engagement?.score
-    ].filter(score => typeof score === 'number');
-    
-    if (scores.length === 0) return 0;
-    
+    ];
+    // Penalize for detected duplication, missing alt, or SEO gaps
+    if (analyses.duplication && analyses.duplication.duplicates && analyses.duplication.duplicates.length > 0) {
+      scores.push(60); // Penalize for duplication
+    }
+    if (analyses.images && analyses.images.missingAlt > 0) {
+      scores.push(70); // Penalize for missing alt text
+    }
+    if (analyses.seoGap && analyses.seoGap.issues && analyses.seoGap.issues.length > 0) {
+      scores.push(65); // Penalize for SEO gaps
+    }
+    // Semantics is not scored directly but could be in future
+    const validScores = scores.filter(score => typeof score === 'number');
+    if (validScores.length === 0) return 0;
     // Average all available scores
-    return Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
+    return Math.round(validScores.reduce((sum, score) => sum + score, 0) / validScores.length);
   }
   
   /**
@@ -865,6 +898,168 @@ class ContentAuditTool extends BaseTool {
   }
   
   /**
+   * Analyze content semantics (topics and entities)
+   */
+  async analyzeSemantics(content, detailLevel) {
+    try {
+      const text = content.plainText;
+      const doc = nlp(text);
+      // Extract topics (nouns, noun phrases)
+      const topics = doc.nouns().out('array');
+      // Extract named entities (people, places, organizations)
+      const people = doc.people().out('array');
+      const places = doc.places().out('array');
+      const organizations = doc.organizations().out('array');
+      // Deduplicate and sanitize
+      return {
+        topics: Array.from(new Set(topics)).filter(Boolean),
+        entities: {
+          people: Array.from(new Set(people)).filter(Boolean),
+          places: Array.from(new Set(places)).filter(Boolean),
+          organizations: Array.from(new Set(organizations)).filter(Boolean)
+        }
+      };
+    } catch (error) {
+      this.logger.error(`Error in semantic analysis: ${error.message}`);
+      return {
+        topics: [],
+        entities: { people: [], places: [], organizations: [] },
+        error: 'Failed to analyze semantics'
+      };
+    }
+  }
+  
+  /**
+   * Detect duplicate/near-duplicate content and inconsistencies
+   */
+  async detectDuplicationAndInconsistencies(content, detailLevel) {
+    try {
+      // Fetch all posts and pages for comparison
+      const api = this.getApiClient();
+      const posts = await api.getPosts({ per_page: 100 });
+      const pages = await api.getPages({ per_page: 100 });
+      const allContent = [...posts.data, ...pages.data];
+      const currentText = content.plainText;
+      const duplicates = [];
+      const inconsistencies = [];
+      // Use cosine similarity for near-duplicate detection
+      const tokenizer = new natural.WordTokenizer();
+      const currentTokens = tokenizer.tokenize(currentText.toLowerCase());
+      for (const item of allContent) {
+        if (item.id === content.id) continue;
+        const itemText = (item.content && item.content.rendered) ? item.content.rendered.replace(/<[^>]+>/g, '') : '';
+        const itemTokens = tokenizer.tokenize(itemText.toLowerCase());
+        const tfidf = new natural.TfIdf();
+        tfidf.addDocument(currentTokens);
+        tfidf.addDocument(itemTokens);
+        const similarity = natural.JaroWinklerDistance(currentTokens.join(' '), itemTokens.join(' '));
+        if (similarity > 0.9) {
+          duplicates.push({ id: item.id, title: item.title && item.title.rendered, similarity });
+        }
+        // Inconsistency: title/content mismatch
+        if (item.title && item.title.rendered && itemText && !itemText.includes(item.title.rendered)) {
+          inconsistencies.push({ id: item.id, title: item.title.rendered, issue: 'Title not reflected in content' });
+        }
+        // Inconsistency: missing meta description
+        if (!item.meta || !item.meta.description) {
+          inconsistencies.push({ id: item.id, title: item.title && item.title.rendered, issue: 'Missing meta description' });
+        }
+      }
+      return { duplicates, inconsistencies };
+    } catch (error) {
+      this.logger.error(`Error in duplication/inconsistency detection: ${error.message}`);
+      return { duplicates: [], inconsistencies: [], error: 'Failed to detect duplication/inconsistencies' };
+    }
+  }
+  
+  /**
+   * Analyze image usage and optimization in content
+   */
+  async analyzeImageUsage(content, detailLevel) {
+    try {
+      const images = [];
+      const imgTags = content.content.match(/<img [^>]*src=["']([^"']+)["'][^>]*>/g) || [];
+      for (const tag of imgTags) {
+        const srcMatch = tag.match(/src=["']([^"']+)["']/);
+        const altMatch = tag.match(/alt=["']([^"']*)["']/);
+        const src = srcMatch ? srcMatch[1] : null;
+        const alt = altMatch ? altMatch[1] : '';
+        let size = null, format = null, optimized = null;
+        if (src && src.startsWith('http')) {
+          try {
+            const response = await fetch(src);
+            if (response.ok) {
+              const buffer = await response.buffer();
+              const metadata = await sharp(buffer).metadata();
+              size = buffer.length;
+              format = metadata.format;
+              optimized = (size < 500 * 1024); // <500KB considered optimized
+            }
+          } catch (e) {
+            // Ignore fetch/analysis errors for individual images
+          }
+        }
+        images.push({ src, alt, size, format, optimized });
+      }
+      // Summary stats
+      const missingAlt = images.filter(img => !img.alt).length;
+      const unoptimized = images.filter(img => optimized === false).length;
+      return {
+        total: images.length,
+        missingAlt,
+        unoptimized,
+        images
+      };
+    } catch (error) {
+      this.logger.error(`Error in image analysis: ${error.message}`);
+      return { total: 0, missingAlt: 0, unoptimized: 0, images: [], error: 'Failed to analyze images' };
+    }
+  }
+  
+  /**
+   * Analyze SEO gaps in content
+   */
+  async analyzeSEOGap(content, detailLevel) {
+    try {
+      const issues = [];
+      // Check for meta title and description
+      if (!content.title || content.title === 'Unknown Title') {
+        issues.push({ type: 'title', message: 'Missing or generic page title' });
+      }
+      if (!content.metadata || !content.metadata.description) {
+        issues.push({ type: 'meta', message: 'Missing meta description' });
+      }
+      // Check for H1 heading
+      if (!content.content.match(/<h1[^>]*>/i)) {
+        issues.push({ type: 'heading', message: 'Missing H1 heading' });
+      }
+      // Check for keyword usage (simple: title in content)
+      if (content.title && content.plainText && !content.plainText.toLowerCase().includes(content.title.toLowerCase().split(' ')[0])) {
+        issues.push({ type: 'keyword', message: 'Title keyword not found in content' });
+      }
+      // Check for internal/external links
+      const hasLinks = /<a [^>]*href=["']([^"']+)["'][^>]*>/i.test(content.content);
+      if (!hasLinks) {
+        issues.push({ type: 'links', message: 'No internal or external links found' });
+      }
+      // Check for image alt text
+      const imgTags = content.content.match(/<img [^>]*>/g) || [];
+      const missingAlt = imgTags.filter(tag => !/alt=["'][^"']+["']/.test(tag)).length;
+      if (missingAlt > 0) {
+        issues.push({ type: 'image', message: `${missingAlt} images missing alt text` });
+      }
+      // Check for canonical link
+      if (!/<link rel=["']canonical["']/i.test(content.content)) {
+        issues.push({ type: 'canonical', message: 'Missing canonical link' });
+      }
+      return { issues };
+    } catch (error) {
+      this.logger.error(`Error in SEO gap analysis: ${error.message}`);
+      return { issues: [], error: 'Failed to analyze SEO gaps' };
+    }
+  }
+  
+  /**
    * Get JSON schema for MCP
    */
   getSchema() {
@@ -928,6 +1123,26 @@ class ContentAuditTool extends BaseTool {
                   type: "boolean", 
                   default: true,
                   description: "Include engagement metrics analysis (requires analytics integration)"
+                },
+                includeSemantics: { 
+                  type: "boolean", 
+                  default: true,
+                  description: "Include semantic analysis (topics and entities)"
+                },
+                includeDuplicationCheck: { 
+                  type: "boolean", 
+                  default: true,
+                  description: "Include duplication check (detects near-duplicate content and inconsistencies)"
+                },
+                includeImageAnalysis: { 
+                  type: "boolean", 
+                  default: true,
+                  description: "Include image analysis (presence, alt text, size, format, compression)"
+                },
+                includeSEOGapAnalysis: { 
+                  type: "boolean", 
+                  default: true,
+                  description: "Include SEO gap analysis (missing or suboptimal SEO elements)"
                 },
                 detailLevel: { 
                   type: "string", 
