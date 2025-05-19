@@ -31,7 +31,9 @@ RUN apk update && apk add --no-cache \
     libpng \
     libpng-dev \
     musl-dev \
-    build-base
+    build-base \
+    giflib-dev \
+    libjpeg-turbo-dev
 
 # Alias python to python3 for node-gyp compatibility
 RUN ln -sf python3 /usr/bin/python
