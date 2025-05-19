@@ -19,7 +19,7 @@ class ThemeManagerTool extends BaseTool {
   /**
    * Execute the theme manager tool
    * @param {Object} params - Parameters for the theme operation
-   * @param {string} params.action - Action to perform (list, get, install, upload, activate, delete, update, search)
+   * @param {string} params.action - Action to perform (list, get, install, upload, activate, delete, update, search, analyze)
    * @param {Object} params.data - Data specific to the action
    */
   async execute(params = {}) {
@@ -43,6 +43,8 @@ class ThemeManagerTool extends BaseTool {
           return await this.updateTheme(data);
         case 'search':
           return await this.searchThemes(data);
+        case 'analyze':
+          return await this.analyzeTheme(data);
         default:
           throw new Error(`Unsupported action: ${action}`);
       }
@@ -790,6 +792,98 @@ class ThemeManagerTool extends BaseTool {
   }
   
   /**
+   * Analyze a theme's capabilities, color scheme, and typography
+   * @param {Object} data - { themeSlug, user_id, site_id, context }
+   * @returns {Object} Capability report and updates master design doc
+   */
+  async analyzeTheme(data) {
+    const { themeSlug, user_id, site_id, context } = data;
+    if (!themeSlug || !user_id || !site_id) {
+      return this.handleError(new Error('themeSlug, user_id, and site_id are required'), 'analyzeTheme');
+    }
+    let styleCssContent = '';
+    let capabilityReport = {};
+    try {
+      await this.browser.launch();
+      await this.browser.login();
+      // Navigate to theme editor for the given theme
+      await this.browser.navigateToAdminPage(`/theme-editor.php?theme=${encodeURIComponent(themeSlug)}`);
+      // Wait for style.css file to be present
+      await this.browser.page.waitForSelector('#template', { timeout: 10000 });
+      // Select style.css in the file list if not already selected
+      const fileList = await this.browser.page.$$eval('#file-list a', links => links.map(l => l.textContent.trim()));
+      if (!fileList.includes('style.css')) {
+        throw new Error('style.css not found in theme files');
+      }
+      // Click style.css if not already selected
+      const selectedFile = await this.browser.page.$eval('#file-list .active', el => el.textContent.trim());
+      if (selectedFile !== 'style.css') {
+        await this.browser.page.evaluate(() => {
+          const styleLink = Array.from(document.querySelectorAll('#file-list a')).find(a => a.textContent.trim() === 'style.css');
+          if (styleLink) styleLink.click();
+        });
+        await this.browser.page.waitForTimeout(500); // Wait for file to load
+      }
+      // Get the contents of style.css
+      styleCssContent = await this.browser.page.$eval('#template', el => el.value);
+      // Parse style.css for metadata
+      const meta = {};
+      const metaRegex = /\/*\s*([\w\- ]+):\s*([^*\n]+)\s*/g;
+      let match;
+      while ((match = metaRegex.exec(styleCssContent))) {
+        const key = match[1].trim().toLowerCase().replace(/ /g, '_');
+        meta[key] = match[2].trim();
+      }
+      // Extract color schemes (simple regex for hex/rgb/hsl)
+      const colorRegex = /#([0-9a-fA-F]{3,6})|rgb\([^)]+\)|hsl\([^)]+\)/g;
+      const colors = Array.from(new Set((styleCssContent.match(colorRegex) || []).map(c => c.trim())));
+      // Extract font families
+      const fontRegex = /font-family:\s*([^;]+);/g;
+      const fonts = Array.from(new Set(Array.from(styleCssContent.matchAll(fontRegex)).map(m => m[1].trim())));
+      // Detect theme features (look for common WordPress theme features in metadata)
+      const features = [];
+      if (/custom[- ]?logo/i.test(styleCssContent)) features.push('custom_logo');
+      if (/custom[- ]?header/i.test(styleCssContent)) features.push('custom_header');
+      if (/custom[- ]?background/i.test(styleCssContent)) features.push('custom_background');
+      if (/woocommerce/i.test(styleCssContent)) features.push('woocommerce_support');
+      if (/editor[- ]?style/i.test(styleCssContent)) features.push('editor_style');
+      if (/widgets?/i.test(styleCssContent)) features.push('widgets');
+      // Build capability report
+      capabilityReport = {
+        theme_slug: themeSlug,
+        name: meta['theme_name'] || meta['name'] || '',
+        author: meta['author'] || '',
+        version: meta['version'] || '',
+        description: meta['description'] || '',
+        colors,
+        fonts,
+        features,
+        meta
+      };
+      // Update master design doc's theme_inventory
+      const DesignDocumentTool = require('./design-document-tool');
+      const docRes = await DesignDocumentTool.getDesignDoc({ user_id, site_id }, context || {});
+      if (!docRes.success) throw new Error('Failed to fetch design doc');
+      const doc = docRes.data;
+      // Remove any existing entry for this theme
+      doc.theme_inventory = (doc.theme_inventory || []).filter(t => t.theme_slug !== themeSlug);
+      doc.theme_inventory.push(capabilityReport);
+      // Save updated doc
+      const updateRes = await DesignDocumentTool.updateDesignDoc({ user_id, site_id, doc_data: doc, create_version: true, version_label: `Theme analysis: ${themeSlug}` }, context || {});
+      if (!updateRes.success) throw new Error('Failed to update design doc');
+      return {
+        success: true,
+        data: capabilityReport,
+        message: 'Theme analyzed and design doc updated'
+      };
+    } catch (error) {
+      return this.handleError(error, 'analyzeTheme');
+    } finally {
+      if (this.browser) await this.browser.close();
+    }
+  }
+  
+  /**
    * Get JSON schema for MCP
    */
   getSchema() {
@@ -803,7 +897,7 @@ class ThemeManagerTool extends BaseTool {
           properties: {
             action: {
               type: "string",
-              enum: ["listThemes", "getThemeDetails", "installTheme", "uploadTheme", "activateTheme", "deleteTheme", "updateTheme", "searchThemes"],
+              enum: ["listThemes", "getThemeDetails", "installTheme", "uploadTheme", "activateTheme", "deleteTheme", "updateTheme", "searchThemes", "analyze"],
               description: "The theme management action to perform",
               default: "listThemes"
             },

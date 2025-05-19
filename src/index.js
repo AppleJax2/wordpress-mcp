@@ -15,6 +15,7 @@ const config = require('./config');
 const logger = require('./utils/logger');
 const connectionManager = require('./api/connection-manager');
 const openaiService = require('./api/openai');
+const resourceTracker = require('./utils/resource-tracker');
 
 // Create Express app
 const app = express();
@@ -90,6 +91,73 @@ app.get('/', (req, res) => {
     description: 'Cloud-powered WordPress browser automation, magically transformed.',
     status: 'running'
   });
+});
+
+// Resource usage stats endpoint
+app.get('/admin/resource-usage', validateApiKey, (req, res) => {
+  try {
+    const detailed = req.query.detailed === 'true';
+    const operationId = req.query.operationId;
+    
+    if (operationId) {
+      const stats = resourceTracker.getStats(operationId, detailed);
+      res.json({ success: true, data: stats });
+    } else {
+      const stats = resourceTracker.getStats(null, detailed);
+      res.json({ success: true, data: stats });
+    }
+  } catch (error) {
+    logger.error('Error fetching resource usage stats', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching resource usage stats',
+      error: error.message
+    });
+  }
+});
+
+// Top resource-consuming operations endpoint
+app.get('/admin/resource-usage/top', validateApiKey, (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const sortBy = req.query.sortBy || 'duration'; // duration, memory, cpu
+    
+    const topOperations = resourceTracker.getTopOperations(limit, sortBy);
+    res.json({ success: true, data: topOperations });
+  } catch (error) {
+    logger.error('Error fetching top resource-consuming operations', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching top resource-consuming operations',
+      error: error.message
+    });
+  }
+});
+
+// Server stats endpoint
+app.get('/admin/stats', validateApiKey, (req, res) => {
+  try {
+    // Get connection stats
+    const connectionStats = connectionManager.getStats();
+    
+    // Get resource usage stats
+    const resourceStats = resourceTracker.getStats(null, false);
+    
+    // Return combined stats
+    res.json({
+      success: true,
+      serverUptime: process.uptime(),
+      connections: connectionStats,
+      resources: resourceStats
+    });
+  } catch (error) {
+    logger.error('Error fetching server stats', error);
+    res.status(500).json({
+      success: false, 
+      message: 'Error fetching server stats',
+      error: error.message
+    });
+  }
 });
 
 // Tools metadata endpoint - using lazy loading
@@ -296,6 +364,7 @@ app.post('/message', (req, res) => {
     case 'tools/call': {
       const toolName = rpc.params?.name;
       const args = rpc.params?.arguments || {};
+      const context = rpc.params?.context || {};
       
       logger.info('[MCP] tools/call => name=', toolName, 'args=', args);
       
@@ -355,9 +424,30 @@ app.post('/message', (req, res) => {
         sessionData.user.operationsRemaining--;
       }
       
+      // Add the site info to the context if available
+      if (args.site_id && args.user_id) {
+        context.site_id = args.site_id;
+        context.user_id = args.user_id;
+      }
+      
+      // Store the SSE response in the context for potential context updates
+      context.sseResponse = sseRes;
+      
       // Execute the tool (asynchronously)
-      tool.execute(args)
+      tool.execute(args, context)
         .then(result => {
+          // Extract and handle context updates
+          let contextUpdated = false;
+          let updatedContext = null;
+          
+          if (result && result.context && result.context.master_doc_updated) {
+            contextUpdated = true;
+            updatedContext = result.context;
+            
+            // Don't expose internal context details to client
+            delete result.context;
+          }
+          
           const callMsg = {
             jsonrpc: '2.0',
             id: rpc.id,
@@ -367,13 +457,29 @@ app.post('/message', (req, res) => {
                   type: 'text',
                   text: JSON.stringify(result)
                 }
-              ]
+              ],
+              // Include minimal context info if context was updated
+              context_updated: contextUpdated,
+              context_version: updatedContext?.master_doc?.version
             }
           };
           
           sseRes.write(`event: message\n`);
           sseRes.write(`data: ${JSON.stringify(callMsg)}\n\n`);
           logger.info('[MCP] SSE => event: message => tools/call success');
+          
+          // If context was updated, send a context update event
+          if (contextUpdated && updatedContext && updatedContext.master_doc) {
+            const contextHandler = require('./utils/context-handler');
+            const updateType = updatedContext.context_update_type || 'minor';
+            
+            contextHandler.sendContextUpdate(
+              sseRes,
+              updatedContext,
+              toolName,
+              updateType
+            );
+          }
         })
         .catch(error => {
           const errorMsg = {

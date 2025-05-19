@@ -1,882 +1,910 @@
 /**
  * Design Document Tool
- * Generates and manages design documentation for WordPress sites
+ * 
+ * Handles creation, storage, retrieval, and versioning of master design documents
+ * for WordPress sites. Works with the TanukiMCP_Master_Design_Doc class in the WordPress plugin.
+ * 
+ * @module tools/design-document-tool
  */
+
 const BaseTool = require('./base-tool');
-const WordPressAPI = require('../api/wordpress');
+const { fetchPage, executeAction, executeRestRequest } = require('../browser/utils');
+const { createErrorResponse, createSuccessResponse } = require('../utils/response-formatter');
+const logger = require('../utils/logger');
+const VisualPreviewTool = require('./visual-preview-tool');
+const ThemeManagerTool = require('./theme-manager-tool');
+const PluginManagerTool = require('./plugin-manager-tool');
+const ContextManagerTool = require('./context-manager-tool');
+const LRU = require('lru-cache');
+const zlib = require('zlib');
+const EventEmitter = require('events');
 
 class DesignDocumentTool extends BaseTool {
   constructor() {
-    super('design_document_tool', 'Generates and manages design documentation for WordPress sites');
-    this.api = new WordPressAPI();
+    super('design-document-tool', 'Manages and versions master design documents');
+    
+    // Register tool methods
+    this.registerMethod('get', this.getDesignDoc.bind(this));
+    this.registerMethod('save', this.saveDesignDoc.bind(this));
+    this.registerMethod('update', this.updateDesignDoc.bind(this));
+    this.registerMethod('version', this.createDocVersion.bind(this));
+    this.registerMethod('list-versions', this.listDocVersions.bind(this));
+    this.registerMethod('get-version', this.getDocVersion.bind(this));
+    this.registerMethod('sync', this.syncDesignDoc.bind(this));
+    this.registerMethod('validate', this.validateDesignDoc.bind(this));
+    this.registerMethod('visual-diff', this.generateVersionVisualDiff.bind(this));
+    this.registerMethod('version-timeline', this.getVersionTimeline.bind(this));
+    // Event emitter for change listeners
+    this.changeEmitter = new EventEmitter();
+    // LRU cache for documents
+    this.docCache = new LRU({ max: 50, ttl: 5 * 60 * 1000 });
   }
-  
+
   /**
-   * Execute the design document tool
-   * @param {Object} params - Parameters for the design document operation
-   * @param {string} params.action - Action to perform (generate, update, export, get)
-   * @param {Object} params.data - Data specific to the action
+   * Get a design document for a specific user and site
+   * 
+   * @param {Object} args - The arguments for retrieving a design document
+   * @param {string} args.user_id - WordPress user ID
+   * @param {string} args.site_id - The site identifier
+   * @param {Object} context - Request context
+   * @returns {Promise<Object>} - The design document or error
    */
-  async execute(params = {}) {
+  async getDesignDoc(args, context) {
+    const cacheKey = `${args.user_id}:${args.site_id}`;
+    if (this.docCache.has(cacheKey)) {
+      const compressed = this.docCache.get(cacheKey);
+      const doc = JSON.parse(zlib.gunzipSync(compressed).toString());
+      return createSuccessResponse(doc);
+    }
     try {
-      const { 
-        action = 'generate', 
-        data = {} 
-      } = params;
+      logger.debug('Getting design document', { userId: args.user_id, siteId: args.site_id });
       
-      switch (action) {
-        case 'generate':
-          return await this.generateDesignDocument(data);
-        case 'update':
-          return await this.updateDesignDocument(data);
-        case 'export':
-          return await this.exportDesignDocument(data);
-        case 'get':
-          return await this.getDesignDocument(data);
-        default:
-          throw new Error(`Unsupported action: ${action}`);
+      if (!args.user_id || !args.site_id) {
+        return createErrorResponse('INVALID_ARGUMENTS', 'User ID and Site ID are required');
       }
+      
+      // Execute WordPress AJAX request to get the document
+      const response = await executeRestRequest({
+        site: context.site,
+        endpoint: 'wp/v2/tanukimcp/design-document',
+        method: 'GET',
+        data: {
+          user_id: args.user_id,
+          site_id: args.site_id
+        }
+      });
+      
+      if (!response || response.error) {
+        logger.error('Failed to get design document', {
+          error: response?.error || 'Unknown error',
+          userId: args.user_id,
+          siteId: args.site_id
+        });
+        return createErrorResponse('RETRIEVAL_FAILED', response?.error || 'Failed to get design document');
+      }
+      
+      // Compress and cache
+      const compressed = zlib.gzipSync(JSON.stringify(response.data));
+      this.docCache.set(cacheKey, compressed);
+      return createSuccessResponse(response.data);
     } catch (error) {
-      console.error('Error executing design document tool:', error);
-      throw error;
+      logger.error('Error getting design document', { error: error.message });
+      return createErrorResponse('SYSTEM_ERROR', `System error: ${error.message}`);
     }
   }
 
   /**
-   * Generate a design document based on site analysis and theme settings
-   * @param {Object} data - Parameters for generating the design document
-   * @param {string} data.title - Title of the design document
-   * @param {Array} data.sections - Sections to include in the document
-   * @returns {Object} Generated design document
+   * Save a new design document for a specific user and site
+   * 
+   * @param {Object} args - The arguments for saving a design document
+   * @param {string} args.user_id - WordPress user ID
+   * @param {string} args.site_id - The site identifier
+   * @param {Object} args.doc_data - The design document data to save
+   * @param {Object} context - Request context
+   * @returns {Promise<Object>} - Success status or error
    */
-  async generateDesignDocument(data) {
-    const { title = 'Design Document', sections = ['all'] } = data;
-    const siteInfo = await this.api.getSiteInfo();
-    
-    // Create the basic document structure
-    const document = {
-      title,
-      generated: new Date().toISOString(),
-      site: {
-        name: siteInfo.name,
-        description: siteInfo.description,
-        url: siteInfo.url
-      },
-      sections: {}
-    };
-    
-    // Generate all required sections
-    const includeAll = sections.includes('all');
-    
-    if (includeAll || sections.includes('colors')) {
-      document.sections.colors = await this.generateColorSection();
+  async saveDesignDoc(args, context) {
+    try {
+      logger.debug('Saving design document', { userId: args.user_id, siteId: args.site_id });
+      
+      if (!args.user_id || !args.site_id || !args.doc_data) {
+        return createErrorResponse('INVALID_ARGUMENTS', 'User ID, Site ID, and document data are required');
+      }
+      
+      // Execute WordPress AJAX request to save the document
+      const response = await executeRestRequest({
+        site: context.site,
+        endpoint: 'wp/v2/tanukimcp/design-document',
+        method: 'POST',
+        data: {
+          user_id: args.user_id,
+          site_id: args.site_id,
+          doc_data: args.doc_data
+        }
+      });
+      
+      if (!response || response.error) {
+        logger.error('Failed to save design document', {
+          error: response?.error || 'Unknown error',
+          userId: args.user_id,
+          siteId: args.site_id
+        });
+        return createErrorResponse('SAVE_FAILED', response?.error || 'Failed to save design document');
+      }
+      
+      // Create initial version history if this is a new document
+      if (!args.doc_data.version_history) {
+        await this.createDocVersion({
+          user_id: args.user_id,
+          site_id: args.site_id,
+          version_label: 'Initial version',
+          version_notes: 'Initial creation of master design document'
+        }, context);
+      }
+      
+      return createSuccessResponse({
+        success: true,
+        message: 'Design document saved successfully',
+        doc_id: response.data.doc_id
+      });
+    } catch (error) {
+      logger.error('Error saving design document', { error: error.message });
+      return createErrorResponse('SYSTEM_ERROR', `System error: ${error.message}`);
     }
-    
-    if (includeAll || sections.includes('typography')) {
-      document.sections.typography = await this.generateTypographySection();
-    }
-    
-    if (includeAll || sections.includes('components')) {
-      document.sections.components = await this.generateComponentsSection();
-    }
-    
-    if (includeAll || sections.includes('layouts')) {
-      document.sections.layouts = await this.generateLayoutsSection();
-    }
-    
-    if (includeAll || sections.includes('patterns')) {
-      document.sections.patterns = await this.generatePatternsSection();
-    }
-    
-    // Save the generated document to the site
-    const postId = await this.saveDesignDocument(document);
-    
-    return {
-      success: true,
-      document,
-      postId,
-      message: 'Design document generated successfully'
-    };
   }
 
   /**
    * Update an existing design document
-   * @param {Object} data - Parameters for updating the design document
-   * @param {number} data.documentId - ID of the document to update
-   * @param {Array} data.sections - Sections to update in the document
-   * @returns {Object} Updated design document
+   * 
+   * @param {Object} args - The arguments for updating a design document
+   * @param {string} args.user_id - WordPress user ID
+   * @param {string} args.site_id - The site identifier
+   * @param {Object} args.doc_data - The updated design document data
+   * @param {boolean} args.create_version - Whether to create a new version
+   * @param {string} args.version_label - Label for the new version (if creating)
+   * @param {string} args.version_notes - Notes for the new version (if creating)
+   * @param {Object} context - Request context
+   * @returns {Promise<Object>} - Success status or error
    */
-  async updateDesignDocument(data) {
-    const { documentId, sections = ['all'] } = data;
-    
-    if (!documentId) {
-      return {
-        success: false,
-        message: 'Document ID is required for updating'
-      };
-    }
-    
-    // Get the existing document
-    const existingDocument = await this.getDesignDocumentById(documentId);
-    
-    if (!existingDocument) {
-      return {
-        success: false,
-        message: `Design document with ID ${documentId} not found`
-      };
-    }
-    
-    // Update the document
-    const document = {
-      ...existingDocument,
-      updated: new Date().toISOString()
-    };
-    
-    // Update required sections
-    const includeAll = sections.includes('all');
-    
-    if (includeAll || sections.includes('colors')) {
-      document.sections.colors = await this.generateColorSection();
-    }
-    
-    if (includeAll || sections.includes('typography')) {
-      document.sections.typography = await this.generateTypographySection();
-    }
-    
-    if (includeAll || sections.includes('components')) {
-      document.sections.components = await this.generateComponentsSection();
-    }
-    
-    if (includeAll || sections.includes('layouts')) {
-      document.sections.layouts = await this.generateLayoutsSection();
-    }
-    
-    if (includeAll || sections.includes('patterns')) {
-      document.sections.patterns = await this.generatePatternsSection();
-    }
-    
-    // Save the updated document
-    const result = await this.updateDesignDocumentById(documentId, document);
-    
-    return {
-      success: result,
-      document,
-      message: result 
-        ? 'Design document updated successfully' 
-        : 'Failed to update design document'
-    };
-  }
-
-  /**
-   * Export a design document to different formats
-   * @param {Object} data - Parameters for exporting the design document
-   * @param {number} data.documentId - ID of the document to export
-   * @param {string} data.format - Format to export to (json, html, pdf, markdown)
-   * @returns {Object} Exported document
-   */
-  async exportDesignDocument(data) {
-    const { documentId, format = 'json' } = data;
-    
-    if (!documentId) {
-      return {
-        success: false,
-        message: 'Document ID is required for exporting'
-      };
-    }
-    
-    // Get the existing document
-    const document = await this.getDesignDocumentById(documentId);
-    
-    if (!document) {
-      return {
-        success: false,
-        message: `Design document with ID ${documentId} not found`
-      };
-    }
-    
-    // Export in the requested format
-    if (format === 'json') {
-      return {
-        success: true,
-        data: JSON.stringify(document, null, 2),
-        format: 'json',
-        message: 'Document exported as JSON successfully'
-      };
-    } else if (format === 'html') {
-      return {
-        success: true,
-        data: this.generateHtmlDocument(document),
-        format: 'html',
-        message: 'Document exported as HTML successfully'
-      };
-    } else if (format === 'markdown') {
-      return {
-        success: true,
-        data: this.generateMarkdownDocument(document),
-        format: 'markdown',
-        message: 'Document exported as Markdown successfully'
-      };
-    } else if (format === 'pdf') {
-      // PDF generation would typically use a library like puppeteer
-      // This is a placeholder for the implementation
-      return {
-        success: false,
-        message: 'PDF export is not implemented yet'
-      };
-    }
-    
-    return {
-      success: false,
-      message: `Unsupported export format: ${format}`
-    };
-  }
-
-  /**
-   * Get a design document by ID or list all documents
-   * @param {Object} data - Parameters for getting the design document
-   * @param {number} data.documentId - ID of the document to get (optional)
-   * @returns {Object} Design document or list of documents
-   */
-  async getDesignDocument(data) {
-    const { documentId } = data;
-    
-    if (documentId) {
-      // Get a specific document
-      const document = await this.getDesignDocumentById(documentId);
+  async updateDesignDoc(args, context) {
+    try {
+      logger.debug('Updating design document', {
+        userId: args.user_id,
+        siteId: args.site_id,
+        createVersion: args.create_version
+      });
       
-      if (!document) {
-        return {
-          success: false,
-          message: `Design document with ID ${documentId} not found`
-        };
+      if (!args.user_id || !args.site_id || !args.doc_data) {
+        return createErrorResponse('INVALID_ARGUMENTS', 'User ID, Site ID, and document data are required');
       }
       
-      return {
-        success: true,
-        document,
-        message: 'Design document retrieved successfully'
-      };
-    } else {
-      // List all documents
-      const documents = await this.listDesignDocuments();
+      // Ensure context is properly initialized
+      context = await this.useContext(args, context);
       
-      return {
+      // Update the document version
+      const currentVersion = args.doc_data.version || '1.0.0';
+      const versionParts = currentVersion.split('.');
+      versionParts[2] = (parseInt(versionParts[2], 10) + 1).toString();
+      args.doc_data.version = versionParts.join('.');
+      args.doc_data.last_updated = new Date().toISOString();
+      
+      // Execute WordPress AJAX request to update the document
+      const response = await executeRestRequest({
+        site: context.site,
+        endpoint: 'wp/v2/tanukimcp/design-document',
+        method: 'PUT',
+        data: {
+          user_id: args.user_id,
+          site_id: args.site_id,
+          doc_data: args.doc_data
+        }
+      });
+      
+      if (!response || response.error) {
+        logger.error('Failed to update design document', {
+          error: response?.error || 'Unknown error',
+          userId: args.user_id,
+          siteId: args.site_id
+        });
+        return createErrorResponse('UPDATE_FAILED', response?.error || 'Failed to update design document');
+      }
+      
+      // Create a new version if requested
+      if (args.create_version) {
+        await this.createDocVersion({
+          user_id: args.user_id,
+          site_id: args.site_id,
+          version_label: args.version_label || `Version ${args.doc_data.version}`,
+          version_notes: args.version_notes || 'Document updated'
+        }, context);
+      }
+      
+      // Update the context with the new doc data
+      const contextUpdateResult = await this.updateContext(args.doc_data, args, context);
+      if (!contextUpdateResult.success) {
+        logger.warn('Failed to update context after design document update', {
+          error: contextUpdateResult.error
+        });
+      } else {
+        context = contextUpdateResult.context;
+        context.context_update_type = 'major';
+      }
+      
+      return createSuccessResponse({
         success: true,
-        documents,
-        message: 'Design documents retrieved successfully'
-      };
+        message: 'Design document updated successfully',
+        version: args.doc_data.version,
+        context: context
+      });
+    } catch (error) {
+      logger.error('Error updating design document', { error: error.message });
+      return createErrorResponse('SYSTEM_ERROR', `System error: ${error.message}`);
     }
   }
 
   /**
-   * Generate the color section of the design document
-   * @returns {Object} Color section data
+   * Create a new version of a design document
+   * 
+   * @param {Object} args - The arguments for creating a version
+   * @param {string} args.user_id - WordPress user ID
+   * @param {string} args.site_id - The site identifier
+   * @param {string} args.version_label - Label for the version
+   * @param {string} args.version_notes - Notes for the version
+   * @param {Object} context - Request context
+   * @returns {Promise<Object>} - Success status or error
    */
-  async generateColorSection() {
-    const themeData = await this.api.getThemeJsonData();
-    const colorSection = {
-      title: 'Color Palette',
-      description: 'The color palette for the site',
-      colors: []
-    };
-    
-    // Get colors from theme.json
-    if (themeData && themeData.settings && themeData.settings.color && themeData.settings.color.palette) {
-      colorSection.colors = themeData.settings.color.palette.map(color => ({
-        name: color.name,
-        slug: color.slug,
-        value: color.color,
-        cssVar: `--wp--preset--color--${color.slug}`
+  async createDocVersion(args, context) {
+    try {
+      logger.debug('Creating design document version', {
+        userId: args.user_id,
+        siteId: args.site_id,
+        label: args.version_label
+      });
+      
+      if (!args.user_id || !args.site_id) {
+        return createErrorResponse('INVALID_ARGUMENTS', 'User ID and Site ID are required');
+      }
+      
+      // Get the current document first
+      const docResponse = await this.getDesignDoc({
+        user_id: args.user_id,
+        site_id: args.site_id
+      }, context);
+      
+      if (!docResponse.success) {
+        return docResponse; // Return the error from getDesignDoc
+      }
+      
+      const doc = docResponse.data;
+      
+      // Create version entry
+      const versionEntry = {
+        version: doc.version || '1.0.0',
+        timestamp: new Date().toISOString(),
+        label: args.version_label || `Version ${doc.version || '1.0.0'}`,
+        notes: args.version_notes || '',
+        snapshot: JSON.stringify(doc) // Store snapshot of the entire document
+      };
+      
+      // Initialize or update version history
+      if (!doc.version_history) {
+        doc.version_history = [];
+      }
+      
+      doc.version_history.push(versionEntry);
+      
+      // Limit version history to last 20 versions to prevent excessive growth
+      if (doc.version_history.length > 20) {
+        doc.version_history = doc.version_history.slice(-20);
+      }
+      
+      // Save the updated document with version history
+      const response = await executeRestRequest({
+        site: context.site,
+        endpoint: 'wp/v2/tanukimcp/design-document',
+        method: 'PUT',
+        data: {
+          user_id: args.user_id,
+          site_id: args.site_id,
+          doc_data: doc
+        }
+      });
+      
+      if (!response || response.error) {
+        logger.error('Failed to create document version', {
+          error: response?.error || 'Unknown error',
+          userId: args.user_id,
+          siteId: args.site_id
+        });
+        return createErrorResponse('VERSION_FAILED', response?.error || 'Failed to create document version');
+      }
+      
+      return createSuccessResponse({
+        success: true,
+        message: 'Document version created successfully',
+        version: doc.version,
+        version_entry: versionEntry
+      });
+    } catch (error) {
+      logger.error('Error creating document version', { error: error.message });
+      return createErrorResponse('SYSTEM_ERROR', `System error: ${error.message}`);
+    }
+  }
+
+  /**
+   * List all versions of a design document
+   * 
+   * @param {Object} args - The arguments for listing versions
+   * @param {string} args.user_id - WordPress user ID
+   * @param {string} args.site_id - The site identifier
+   * @param {Object} context - Request context
+   * @returns {Promise<Object>} - List of versions or error
+   */
+  async listDocVersions(args, context) {
+    try {
+      logger.debug('Listing design document versions', {
+        userId: args.user_id,
+        siteId: args.site_id
+      });
+      
+      if (!args.user_id || !args.site_id) {
+        return createErrorResponse('INVALID_ARGUMENTS', 'User ID and Site ID are required');
+      }
+      
+      // Get the current document with version history
+      const docResponse = await this.getDesignDoc({
+        user_id: args.user_id,
+        site_id: args.site_id
+      }, context);
+      
+      if (!docResponse.success) {
+        return docResponse; // Return the error from getDesignDoc
+      }
+      
+      const doc = docResponse.data;
+      
+      if (!doc.version_history || !Array.isArray(doc.version_history)) {
+        return createSuccessResponse({
+          versions: [],
+          message: 'No version history found for this document'
+        });
+      }
+      
+      // Return version information without the full snapshot data
+      const versions = doc.version_history.map(version => ({
+        version: version.version,
+        timestamp: version.timestamp,
+        label: version.label,
+        notes: version.notes
       }));
+      
+      return createSuccessResponse({
+        versions,
+        current_version: doc.version
+      });
+    } catch (error) {
+      logger.error('Error listing document versions', { error: error.message });
+      return createErrorResponse('SYSTEM_ERROR', `System error: ${error.message}`);
     }
-    
-    // Get color usage examples
-    colorSection.usage = [
-      {
-        name: 'Text Colors',
-        examples: this.getColorUsageExamples('text')
-      },
-      {
-        name: 'Background Colors',
-        examples: this.getColorUsageExamples('background')
-      }
-    ];
-    
-    return colorSection;
   }
 
   /**
-   * Generate the typography section of the design document
-   * @returns {Object} Typography section data
+   * Get a specific version of a design document
+   * 
+   * @param {Object} args - The arguments for getting a version
+   * @param {string} args.user_id - WordPress user ID
+   * @param {string} args.site_id - The site identifier
+   * @param {string} args.version - The version to retrieve
+   * @param {Object} context - Request context
+   * @returns {Promise<Object>} - The versioned document or error
    */
-  async generateTypographySection() {
-    const themeData = await this.api.getThemeJsonData();
-    const typographySection = {
-      title: 'Typography',
-      description: 'The typography settings for the site',
-      fontFamilies: [],
-      fontSizes: []
-    };
-    
-    // Get typography from theme.json
-    if (themeData && themeData.settings && themeData.settings.typography) {
-      // Font families
-      if (themeData.settings.typography.fontFamilies) {
-        typographySection.fontFamilies = themeData.settings.typography.fontFamilies.map(font => ({
-          name: font.name,
-          slug: font.slug,
-          value: font.fontFamily,
-          cssVar: `--wp--preset--font-family--${font.slug}`
-        }));
+  async getDocVersion(args, context) {
+    try {
+      logger.debug('Getting specific design document version', {
+        userId: args.user_id,
+        siteId: args.site_id,
+        version: args.version
+      });
+      
+      if (!args.user_id || !args.site_id || !args.version) {
+        return createErrorResponse('INVALID_ARGUMENTS', 'User ID, Site ID, and version are required');
       }
       
-      // Font sizes
-      if (themeData.settings.typography.fontSizes) {
-        typographySection.fontSizes = themeData.settings.typography.fontSizes.map(size => ({
-          name: size.name,
-          slug: size.slug,
-          value: size.size,
-          cssVar: `--wp--preset--font-size--${size.slug}`
-        }));
+      // Get the current document with version history
+      const docResponse = await this.getDesignDoc({
+        user_id: args.user_id,
+        site_id: args.site_id
+      }, context);
+      
+      if (!docResponse.success) {
+        return docResponse; // Return the error from getDesignDoc
       }
+      
+      const doc = docResponse.data;
+      
+      if (!doc.version_history || !Array.isArray(doc.version_history)) {
+        return createErrorResponse('VERSION_NOT_FOUND', 'No version history found for this document');
+      }
+      
+      // Find the requested version
+      const versionEntry = doc.version_history.find(v => v.version === args.version);
+      
+      if (!versionEntry) {
+        return createErrorResponse('VERSION_NOT_FOUND', `Version ${args.version} not found in document history`);
+      }
+      
+      // Parse the snapshot to get the document at that version
+      const versionedDoc = JSON.parse(versionEntry.snapshot);
+      
+      return createSuccessResponse({
+        doc: versionedDoc,
+        version_info: {
+          version: versionEntry.version,
+          timestamp: versionEntry.timestamp,
+          label: versionEntry.label,
+          notes: versionEntry.notes
+        }
+      });
+    } catch (error) {
+      logger.error('Error getting document version', { error: error.message });
+      return createErrorResponse('SYSTEM_ERROR', `System error: ${error.message}`);
     }
-    
-    // Get typography usage examples
-    typographySection.usage = [
-      {
-        name: 'Headings',
-        examples: this.getTypographyUsageExamples('headings')
-      },
-      {
-        name: 'Paragraphs',
-        examples: this.getTypographyUsageExamples('paragraphs')
-      }
-    ];
-    
-    return typographySection;
   }
 
   /**
-   * Generate the components section of the design document
-   * @returns {Object} Components section data
+   * Sync a design document between client and server
+   * Handles merging, conflict resolution, and atomic updates
+   * 
+   * @param {Object} args - The arguments for syncing a document
+   * @param {string} args.user_id - WordPress user ID
+   * @param {string} args.site_id - The site identifier
+   * @param {Object} args.client_doc - The client-side document state
+   * @param {string} args.base_version - The base version the client started with
+   * @param {Object} context - Request context
+   * @returns {Promise<Object>} - The synced document or error with conflicts
    */
-  async generateComponentsSection() {
-    // Get registered blocks that could be considered components
-    const blocks = await this.api.getBlocks();
+  async syncDesignDoc(args, context) {
+    try {
+      logger.debug('Syncing design document', {
+        userId: args.user_id,
+        siteId: args.site_id,
+        baseVersion: args.base_version
+      });
+      
+      if (!args.user_id || !args.site_id || !args.client_doc || !args.base_version) {
+        return createErrorResponse('INVALID_ARGUMENTS', 'User ID, Site ID, client document, and base version are required');
+      }
+      
+      // Get the current server document
+      const serverDocResponse = await this.getDesignDoc({
+        user_id: args.user_id,
+        site_id: args.site_id
+      }, context);
+      
+      if (!serverDocResponse.success) {
+        return serverDocResponse; // Return the error from getDesignDoc
+      }
+      
+      const serverDoc = serverDocResponse.data;
+      
+      // Check for version mismatch
+      if (serverDoc.version !== args.base_version) {
+        // Attempt to merge changes
+        const mergeResult = this.mergeDocuments(serverDoc, args.client_doc, args.base_version);
+        
+        if (mergeResult.conflicts) {
+          return createErrorResponse('SYNC_CONFLICT', 'Document sync conflicts detected', {
+            server_version: serverDoc.version,
+            client_base_version: args.base_version,
+            conflicts: mergeResult.conflicts
+          });
+        }
+        
+        // Update with merged document
+        const updateResponse = await this.updateDesignDoc({
+          user_id: args.user_id,
+          site_id: args.site_id,
+          doc_data: mergeResult.merged_doc,
+          create_version: true,
+          version_label: 'Merge sync',
+          version_notes: `Merged changes from client (base: ${args.base_version}) and server (version: ${serverDoc.version})`
+        }, context);
+        
+        if (!updateResponse.success) {
+          return updateResponse; // Return the error from updateDesignDoc
+        }
+        
+        return createSuccessResponse({
+          success: true,
+          message: 'Document synced successfully (merged)',
+          doc: mergeResult.merged_doc,
+          was_merged: true
+        });
+      }
+      
+      // No version mismatch, simple update
+      const updateResponse = await this.updateDesignDoc({
+        user_id: args.user_id,
+        site_id: args.site_id,
+        doc_data: args.client_doc,
+        create_version: false
+      }, context);
+      
+      if (!updateResponse.success) {
+        return updateResponse; // Return the error from updateDesignDoc
+      }
+      
+      return createSuccessResponse({
+        success: true,
+        message: 'Document synced successfully',
+        doc: args.client_doc,
+        was_merged: false
+      });
+    } catch (error) {
+      logger.error('Error syncing document', { error: error.message });
+      return createErrorResponse('SYSTEM_ERROR', `System error: ${error.message}`);
+    }
+  }
+
+  /**
+   * Merge two versions of a document, handling conflicts
+   * 
+   * @param {Object} serverDoc - The server-side document
+   * @param {Object} clientDoc - The client-side document
+   * @param {string} baseVersion - The base version the client started with
+   * @returns {Object} - Merged document and any conflicts
+   */
+  mergeDocuments(serverDoc, clientDoc, baseVersion) {
+    // Start with a deep copy of the server document
+    const mergedDoc = JSON.parse(JSON.stringify(serverDoc));
+    const conflicts = [];
     
-    const componentsSection = {
-      title: 'Components',
-      description: 'The reusable components available on the site',
-      components: []
-    };
+    // Get base version snapshot if available
+    let baseDoc = null;
+    if (serverDoc.version_history) {
+      const baseVersionEntry = serverDoc.version_history.find(v => v.version === baseVersion);
+      if (baseVersionEntry) {
+        baseDoc = JSON.parse(baseVersionEntry.snapshot);
+      }
+    }
     
-    // Filter blocks to include only those that are likely components
-    const componentBlocks = blocks.filter(block => {
-      return (
-        block.name.startsWith('core/') && 
-        ['button', 'image', 'quote', 'pullquote', 'table', 'calendar', 'search', 'social-links'].some(component => 
-          block.name === `core/${component}`
-        )
-      );
+    // Define sections to merge
+    const sectionsToMerge = [
+      'sitemap',
+      'wireframe',
+      'design_tokens',
+      'theme_inventory',
+      'plugin_inventory',
+      'block_inventory',
+      'page_structure',
+      'user_notes',
+      'ai_notes'
+    ];
+    
+    // For each section, apply three-way merge if possible, otherwise use client changes
+    sectionsToMerge.forEach(section => {
+      // Simple text fields
+      if (section === 'user_notes' || section === 'ai_notes') {
+        if (clientDoc[section] !== serverDoc[section]) {
+          // If base is available, do a three-way merge
+          if (baseDoc && baseDoc[section] === serverDoc[section]) {
+            // Server hasn't changed, take client version
+            mergedDoc[section] = clientDoc[section];
+          } else if (baseDoc && baseDoc[section] === clientDoc[section]) {
+            // Client hasn't changed, keep server version
+            // (already in mergedDoc)
+          } else {
+            // Both changed or no base available, report conflict
+            conflicts.push({
+              section,
+              server_value: serverDoc[section],
+              client_value: clientDoc[section],
+              resolution: 'server_preserved'
+            });
+          }
+        }
+        return;
+      }
+      
+      // Array-based sections
+      if (Array.isArray(clientDoc[section]) && Array.isArray(serverDoc[section])) {
+        // Merge inventory arrays by slug/id
+        if (section.includes('inventory') || section === 'sitemap' || section === 'page_structure') {
+          const idField = section === 'sitemap' || section === 'page_structure' ? 'id' : 'slug';
+          
+          // Create maps for faster lookup
+          const serverMap = new Map(serverDoc[section].map(item => [item[idField], item]));
+          const clientMap = new Map(clientDoc[section].map(item => [item[idField], item]));
+          const baseMap = baseDoc && Array.isArray(baseDoc[section]) 
+            ? new Map(baseDoc[section].map(item => [item[idField], item]))
+            : new Map();
+          
+          const mergedArray = [];
+          const processedIds = new Set();
+          
+          // Process all server items
+          for (const [id, serverItem] of serverMap.entries()) {
+            const clientItem = clientMap.get(id);
+            const baseItem = baseMap.get(id);
+            
+            processedIds.add(id);
+            
+            if (!clientItem) {
+              // Item exists on server but not client
+              if (!baseItem) {
+                // New on server, keep it
+                mergedArray.push(serverItem);
+              } else {
+                // Deleted on client, keep the deletion
+                // (don't add to mergedArray)
+              }
+            } else {
+              // Item exists on both sides
+              // Keep most recent version (client)
+              mergedArray.push(clientItem);
+            }
+          }
+          
+          // Add items that are only in client
+          for (const [id, clientItem] of clientMap.entries()) {
+            if (!processedIds.has(id)) {
+              mergedArray.push(clientItem);
+            }
+          }
+          
+          mergedDoc[section] = mergedArray;
+        } else {
+          // For complex nested structures like wireframe, override with client version
+          // and flag potential conflict
+          if (JSON.stringify(clientDoc[section]) !== JSON.stringify(serverDoc[section])) {
+            mergedDoc[section] = clientDoc[section];
+            conflicts.push({
+              section,
+              message: `Complex structure in ${section} may have conflicts`,
+              resolution: 'client_version_used'
+            });
+          }
+        }
+      }
     });
     
-    // Get component details
-    componentsSection.components = componentBlocks.map(block => ({
-      name: block.title,
-      slug: block.name.replace('core/', ''),
-      description: block.description,
-      example: this.getComponentExample(block.name)
-    }));
+    // Add version and last updated from the server doc
+    mergedDoc.version = serverDoc.version;
+    mergedDoc.last_updated = serverDoc.last_updated;
     
-    return componentsSection;
-  }
-
-  /**
-   * Generate the layouts section of the design document
-   * @returns {Object} Layouts section data
-   */
-  async generateLayoutsSection() {
-    const themeData = await this.api.getThemeJsonData();
-    
-    const layoutsSection = {
-      title: 'Layouts',
-      description: 'The layout settings and templates available for the site',
-      settings: {},
-      templates: []
-    };
-    
-    // Get layout settings from theme.json
-    if (themeData && themeData.settings && themeData.settings.layout) {
-      layoutsSection.settings = themeData.settings.layout;
+    // For each conflict, add a suggestion
+    if (conflicts.length > 0) {
+      conflicts.forEach(conflict => {
+        conflict.suggestion = `Review changes in section '${conflict.section}'. Consider using server, client, or manual merge.`;
+        conflict.resolution_options = ['server', 'client', 'manual'];
+      });
     }
-    
-    // Get templates
-    const templates = await this.api.getTemplates();
-    if (templates && templates.length > 0) {
-      layoutsSection.templates = templates.map(template => ({
-        name: template.title?.rendered || template.slug,
-        slug: template.slug,
-        description: template.description || 'No description available'
-      }));
-    }
-    
-    return layoutsSection;
-  }
-
-  /**
-   * Generate the patterns section of the design document
-   * @returns {Object} Patterns section data
-   */
-  async generatePatternsSection() {
-    // Get registered patterns
-    const patterns = await this.api.getPatterns();
-    
-    const patternsSection = {
-      title: 'Patterns',
-      description: 'The block patterns available on the site',
-      patterns: []
-    };
-    
-    // Get pattern details
-    if (patterns && patterns.length > 0) {
-      patternsSection.patterns = patterns.map(pattern => ({
-        name: pattern.title?.rendered || pattern.name,
-        slug: pattern.slug,
-        description: pattern.description || 'No description available',
-        categories: pattern.categories || []
-      }));
-    }
-    
-    return patternsSection;
-  }
-
-  /**
-   * Get color usage examples for a specific context
-   * @param {string} context - Context to get examples for (text, background)
-   * @returns {Array} Usage examples
-   */
-  getColorUsageExamples(context) {
-    // This would be implemented to get real examples from the site
-    // For now, returning placeholder data
-    return [
-      {
-        name: 'Primary',
-        description: `Primary ${context} color used for main elements`,
-        value: '#0073AA'
-      },
-      {
-        name: 'Secondary',
-        description: `Secondary ${context} color used for supporting elements`,
-        value: '#23282D'
-      }
-    ];
-  }
-
-  /**
-   * Get typography usage examples for a specific context
-   * @param {string} context - Context to get examples for (headings, paragraphs)
-   * @returns {Array} Usage examples
-   */
-  getTypographyUsageExamples(context) {
-    // This would be implemented to get real examples from the site
-    // For now, returning placeholder data
-    if (context === 'headings') {
-      return [
-        {
-          name: 'H1',
-          description: 'Main heading used for page titles',
-          fontFamily: 'Inter',
-          fontSize: '36px',
-          fontWeight: '700',
-          example: '<h1>Sample Heading</h1>'
-        },
-        {
-          name: 'H2',
-          description: 'Subheading used for section titles',
-          fontFamily: 'Inter',
-          fontSize: '24px',
-          fontWeight: '600',
-          example: '<h2>Sample Subheading</h2>'
-        }
-      ];
-    } else {
-      return [
-        {
-          name: 'Body',
-          description: 'Main body text used throughout the site',
-          fontFamily: 'Inter',
-          fontSize: '16px',
-          fontWeight: '400',
-          example: '<p>Sample paragraph text.</p>'
-        },
-        {
-          name: 'Small',
-          description: 'Small text used for captions and notes',
-          fontFamily: 'Inter',
-          fontSize: '14px',
-          fontWeight: '400',
-          example: '<p class="small">Sample small text.</p>'
-        }
-      ];
-    }
-  }
-
-  /**
-   * Get example HTML for a component
-   * @param {string} blockName - Name of the block/component
-   * @returns {string} Example HTML
-   */
-  getComponentExample(blockName) {
-    // This would be implemented to get real examples from the site
-    // For now, returning placeholder examples based on block name
-    switch (blockName) {
-      case 'core/button':
-        return '<button class="wp-block-button__link">Click Me</button>';
-      case 'core/image':
-        return '<figure class="wp-block-image"><img src="placeholder.jpg" alt="Example image" /></figure>';
-      case 'core/quote':
-        return '<blockquote class="wp-block-quote"><p>Example quote text</p><cite>Citation</cite></blockquote>';
-      default:
-        return `<div>Example of ${blockName}</div>`;
-    }
-  }
-
-  /**
-   * Save a design document to the site as a custom post type
-   * @param {Object} document - The document to save
-   * @returns {number} Post ID of the saved document
-   */
-  async saveDesignDocument(document) {
-    // This would save the document to a custom post type
-    // For now, simulating a successful save
-    return 123; // Simulated post ID
-  }
-
-  /**
-   * Get a design document by ID
-   * @param {number} id - ID of the document to retrieve
-   * @returns {Object} The retrieved document
-   */
-  async getDesignDocumentById(id) {
-    // This would retrieve the document from the site
-    // For now, simulating a successful retrieval
     return {
-      id,
-      title: 'Design Document',
-      generated: '2023-01-01T00:00:00.000Z',
-      site: {
-        name: 'Example Site',
-        description: 'Example site description',
-        url: 'https://example.com'
-      },
-      sections: {
-        colors: await this.generateColorSection(),
-        typography: await this.generateTypographySection()
-      }
+      merged_doc: mergedDoc,
+      conflicts: conflicts.length > 0 ? conflicts : null
     };
   }
 
   /**
-   * Update a design document by ID
-   * @param {number} id - ID of the document to update
-   * @param {Object} document - The updated document
-   * @returns {boolean} Success status
+   * Validate a design document against the schema
+   * 
+   * @param {Object} args - The arguments for validation
+   * @param {Object} args.doc_data - The document data to validate
+   * @param {Object} context - Request context
+   * @returns {Promise<Object>} - Validation results
    */
-  async updateDesignDocumentById(id, document) {
-    // This would update the document on the site
-    // For now, simulating a successful update
-    return true;
-  }
-
-  /**
-   * List all design documents
-   * @returns {Array} List of documents
-   */
-  async listDesignDocuments() {
-    // This would list all documents from the site
-    // For now, simulating a successful listing
-    return [
-      {
-        id: 123,
-        title: 'Main Design Document',
-        generated: '2023-01-01T00:00:00.000Z'
-      },
-      {
-        id: 124,
-        title: 'Product Page Design',
-        generated: '2023-02-01T00:00:00.000Z'
+  async validateDesignDoc(args, context) {
+    try {
+      logger.debug('Validating design document');
+      
+      if (!args.doc_data) {
+        return createErrorResponse('INVALID_ARGUMENTS', 'Document data is required');
       }
-    ];
-  }
-
-  /**
-   * Generate an HTML document from the design document
-   * @param {Object} document - The design document
-   * @returns {string} HTML document
-   */
-  generateHtmlDocument(document) {
-    let html = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${document.title} - ${document.site.name}</title>
-  <style>
-    body { 
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.5;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 2rem;
-    }
-    h1, h2, h3 { margin-top: 2rem; }
-    .color-swatch {
-      display: inline-block;
-      width: 200px;
-      margin: 1rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .color-swatch-preview {
-      height: 100px;
-    }
-    .color-swatch-details {
-      padding: 0.5rem;
-      font-size: 0.875rem;
-    }
-    .font-example {
-      margin: 1rem 0;
-      padding: 1rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    }
-    .component-example {
-      margin: 1rem 0;
-      padding: 1rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>${document.title}</h1>
-    <p>Generated on ${new Date(document.generated).toLocaleDateString()}</p>
-    <p>Site: ${document.site.name} - ${document.site.url}</p>
-    <p>${document.site.description}</p>
-  </header>
-  <main>`;
-    
-    // Add color section
-    if (document.sections.colors) {
-      const colors = document.sections.colors;
-      html += `
-    <section id="colors">
-      <h2>${colors.title}</h2>
-      <p>${colors.description}</p>
-      <div class="color-swatches">`;
       
-      colors.colors.forEach(color => {
-        html += `
-        <div class="color-swatch">
-          <div class="color-swatch-preview" style="background-color: ${color.value};"></div>
-          <div class="color-swatch-details">
-            <h3>${color.name}</h3>
-            <p>Hex: ${color.value}</p>
-            <p>CSS Variable: ${color.cssVar}</p>
-          </div>
-        </div>`;
+      const validationIssues = [];
+      
+      // Basic structure validation
+      const requiredFields = [
+        'version',
+        'last_updated',
+        'sitemap',
+        'wireframe',
+        'design_tokens',
+        'theme_inventory',
+        'plugin_inventory',
+        'block_inventory',
+        'page_structure'
+      ];
+      
+      requiredFields.forEach(field => {
+        if (!args.doc_data.hasOwnProperty(field)) {
+          validationIssues.push({
+            field,
+            issue: 'missing_field',
+            message: `Required field ${field} is missing`
+          });
+        }
       });
       
-      html += `
-      </div>
-    </section>`;
-    }
-    
-    // Add typography section
-    if (document.sections.typography) {
-      const typography = document.sections.typography;
-      html += `
-    <section id="typography">
-      <h2>${typography.title}</h2>
-      <p>${typography.description}</p>
+      // Array validation
+      const arrayFields = [
+        'sitemap',
+        'wireframe',
+        'theme_inventory',
+        'plugin_inventory',
+        'block_inventory',
+        'page_structure'
+      ];
       
-      <h3>Font Families</h3>
-      <div class="font-families">`;
-      
-      typography.fontFamilies.forEach(font => {
-        html += `
-        <div class="font-example" style="font-family: ${font.value};">
-          <h4>${font.name}</h4>
-          <p>The quick brown fox jumps over the lazy dog.</p>
-          <p><strong>CSS Variable:</strong> ${font.cssVar}</p>
-        </div>`;
+      arrayFields.forEach(field => {
+        if (args.doc_data.hasOwnProperty(field) && !Array.isArray(args.doc_data[field])) {
+          validationIssues.push({
+            field,
+            issue: 'invalid_type',
+            message: `Field ${field} must be an array`
+          });
+        }
       });
       
-      html += `
-      </div>
+      // Object validation
+      if (args.doc_data.hasOwnProperty('design_tokens') && typeof args.doc_data.design_tokens !== 'object') {
+        validationIssues.push({
+          field: 'design_tokens',
+          issue: 'invalid_type',
+          message: 'design_tokens must be an object'
+        });
+      }
       
-      <h3>Font Sizes</h3>
-      <div class="font-sizes">`;
+      // Version format validation
+      if (args.doc_data.hasOwnProperty('version')) {
+        const versionRegex = /^\d+\.\d+\.\d+$/;
+        if (!versionRegex.test(args.doc_data.version)) {
+          validationIssues.push({
+            field: 'version',
+            issue: 'invalid_format',
+            message: 'Version must be in semver format (e.g., 1.0.0)'
+          });
+        }
+      }
       
-      typography.fontSizes.forEach(size => {
-        html += `
-        <div class="font-example">
-          <p style="font-size: ${size.value};">${size.name}: The quick brown fox jumps over the lazy dog.</p>
-          <p><strong>Value:</strong> ${size.value}</p>
-          <p><strong>CSS Variable:</strong> ${size.cssVar}</p>
-        </div>`;
-      });
-      
-      html += `
-      </div>
-    </section>`;
-    }
-    
-    // Add components section
-    if (document.sections.components) {
-      const components = document.sections.components;
-      html += `
-    <section id="components">
-      <h2>${components.title}</h2>
-      <p>${components.description}</p>`;
-      
-      components.components.forEach(component => {
-        html += `
-      <div class="component-example">
-        <h3>${component.name}</h3>
-        <p>${component.description}</p>
-        <div class="component-preview">
-          ${component.example}
-        </div>
-      </div>`;
-      });
-      
-      html += `
-    </section>`;
-    }
-    
-    // Close the HTML document
-    html += `
-  </main>
-  <footer>
-    <p>Document exported from ${document.site.name} on ${new Date().toLocaleDateString()}</p>
-  </footer>
-</body>
-</html>`;
-    
-    return html;
-  }
-
-  /**
-   * Generate a Markdown document from the design document
-   * @param {Object} document - The design document
-   * @returns {string} Markdown document
-   */
-  generateMarkdownDocument(document) {
-    let markdown = `# ${document.title}\n\n`;
-    markdown += `Generated on ${new Date(document.generated).toLocaleDateString()}\n\n`;
-    markdown += `Site: ${document.site.name} - ${document.site.url}\n\n`;
-    markdown += `${document.site.description}\n\n`;
-    
-    // Add color section
-    if (document.sections.colors) {
-      const colors = document.sections.colors;
-      markdown += `## ${colors.title}\n\n`;
-      markdown += `${colors.description}\n\n`;
-      
-      colors.colors.forEach(color => {
-        markdown += `### ${color.name}\n\n`;
-        markdown += `- Hex: \`${color.value}\`\n`;
-        markdown += `- CSS Variable: \`${color.cssVar}\`\n\n`;
-      });
-    }
-    
-    // Add typography section
-    if (document.sections.typography) {
-      const typography = document.sections.typography;
-      markdown += `## ${typography.title}\n\n`;
-      markdown += `${typography.description}\n\n`;
-      
-      markdown += `### Font Families\n\n`;
-      typography.fontFamilies.forEach(font => {
-        markdown += `#### ${font.name}\n\n`;
-        markdown += `- Font Family: \`${font.value}\`\n`;
-        markdown += `- CSS Variable: \`${font.cssVar}\`\n\n`;
-      });
-      
-      markdown += `### Font Sizes\n\n`;
-      typography.fontSizes.forEach(size => {
-        markdown += `#### ${size.name}\n\n`;
-        markdown += `- Size: \`${size.value}\`\n`;
-        markdown += `- CSS Variable: \`${size.cssVar}\`\n\n`;
-      });
-    }
-    
-    // Add components section
-    if (document.sections.components) {
-      const components = document.sections.components;
-      markdown += `## ${components.title}\n\n`;
-      markdown += `${components.description}\n\n`;
-      
-      components.components.forEach(component => {
-        markdown += `### ${component.name}\n\n`;
-        markdown += `${component.description}\n\n`;
-        markdown += "```html\n";
-        markdown += `${component.example}\n`;
-        markdown += "```\n\n";
-      });
-    }
-    
-    return markdown;
-  }
-
-  /**
-   * Get the schema for the tool
-   * @returns {Object} Tool schema
-   */
-  getSchema() {
-    return {
-      $id: 'design-document-tool-schema',
-      type: 'object',
-      properties: {
-        action: {
-          type: 'string',
-          enum: ['generate', 'update', 'export', 'get'],
-          description: 'Action to perform with the design document tool'
-        },
-        data: {
-          type: 'object',
-          properties: {
-            title: {
-              type: 'string',
-              description: 'Title of the design document'
-            },
-            sections: {
-              type: 'array',
-              items: {
-                type: 'string',
-                enum: ['all', 'colors', 'typography', 'components', 'layouts', 'patterns']
-              },
-              description: 'Sections to include in the document'
-            },
-            documentId: {
-              type: 'number',
-              description: 'ID of the document to update, export, or get'
-            },
-            format: {
-              type: 'string',
-              enum: ['json', 'html', 'pdf', 'markdown'],
-              description: 'Format for exporting the design document'
+      // Enhanced: Validate themes, plugins, blocks
+      const { doc_data } = args;
+      if (doc_data) {
+        // Validate themes
+        if (Array.isArray(doc_data.theme_inventory)) {
+          for (const theme of doc_data.theme_inventory) {
+            const themeResult = await ThemeManagerTool.execute({ action: 'get', data: { themeSlug: theme.slug } });
+            if (!themeResult.success) {
+              validationIssues.push({
+                field: 'theme_inventory',
+                issue: 'theme_not_found',
+                message: `Theme '${theme.slug}' not found or not compatible.`
+              });
             }
           }
         }
-      },
-      required: ['action']
-    };
+        // Validate plugins
+        if (Array.isArray(doc_data.plugin_inventory)) {
+          for (const plugin of doc_data.plugin_inventory) {
+            const pluginResult = await PluginManagerTool.execute({ action: 'get', data: { pluginSlug: plugin.slug } });
+            if (!pluginResult.success) {
+              validationIssues.push({
+                field: 'plugin_inventory',
+                issue: 'plugin_not_found',
+                message: `Plugin '${plugin.slug}' not found or not compatible.`
+              });
+            }
+          }
+        }
+        // TODO: Validate blocks if block manager exists
+      }
+      
+      return createSuccessResponse({
+        valid: validationIssues.length === 0,
+        issues: validationIssues.length > 0 ? validationIssues : null
+      });
+    } catch (error) {
+      logger.error('Error validating document', { error: error.message });
+      return createErrorResponse('SYSTEM_ERROR', `System error: ${error.message}`);
+    }
+  }
+
+  // --- VERSION VISUALIZATION ---
+  /**
+   * Generate a visual diff between two document versions
+   * @param {Object} args - { user_id, site_id, version_a, version_b, url, viewport }
+   * @param {Object} context
+   */
+  async generateVersionVisualDiff(args, context) {
+    try {
+      const { user_id, site_id, version_a, version_b, url, viewport = 'desktop' } = args;
+      if (!user_id || !site_id || !version_a || !version_b || !url) {
+        return createErrorResponse('INVALID_ARGUMENTS', 'user_id, site_id, version_a, version_b, and url are required');
+      }
+      // Get both versions
+      const docA = await this.getDocVersion({ user_id, site_id, version: version_a }, context);
+      const docB = await this.getDocVersion({ user_id, site_id, version: version_b }, context);
+      if (!docA.success || !docB.success) {
+        return createErrorResponse('VERSION_NOT_FOUND', 'One or both versions not found');
+      }
+      // Generate screenshots for both versions
+      const before = await VisualPreviewTool.generateScreenshot({ url, viewport }, context);
+      const after = await VisualPreviewTool.generateScreenshot({ url, viewport }, context);
+      if (!before.success || !after.success) {
+        return createErrorResponse('SCREENSHOT_ERROR', 'Failed to generate screenshots for visual diff');
+      }
+      // Generate visual diff
+      const diff = await VisualPreviewTool.generateDiff({ beforeImage: before.data.screenshot, afterImage: after.data.screenshot }, context);
+      if (!diff.success) {
+        return createErrorResponse('DIFF_ERROR', 'Failed to generate visual diff');
+      }
+      return createSuccessResponse({
+        diff: diff.data.diff,
+        diffMap: diff.data.diffMap,
+        metadata: diff.data.metadata
+      });
+    } catch (error) {
+      logger.error('Error generating version visual diff', { error: error.message });
+      return createErrorResponse('SYSTEM_ERROR', `System error: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get a graphical timeline of version history
+   * @param {Object} args - { user_id, site_id }
+   * @param {Object} context
+   */
+  async getVersionTimeline(args, context) {
+    try {
+      const { user_id, site_id } = args;
+      if (!user_id || !site_id) {
+        return createErrorResponse('INVALID_ARGUMENTS', 'user_id and site_id are required');
+      }
+      const docResponse = await this.getDesignDoc({ user_id, site_id }, context);
+      if (!docResponse.success) {
+        return docResponse;
+      }
+      const doc = docResponse.data;
+      if (!doc.version_history || !Array.isArray(doc.version_history)) {
+        return createSuccessResponse({ timeline: [] });
+      }
+      // Build timeline structure
+      const timeline = doc.version_history.map((v, idx) => ({
+        version: v.version,
+        timestamp: v.timestamp,
+        label: v.label,
+        notes: v.notes,
+        parent: idx > 0 ? doc.version_history[idx - 1].version : null
+      }));
+      return createSuccessResponse({ timeline });
+    } catch (error) {
+      logger.error('Error generating version timeline', { error: error.message });
+      return createErrorResponse('SYSTEM_ERROR', `System error: ${error.message}`);
+    }
+  }
+
+  // --- INTEGRATION ENHANCEMENTS ---
+  // Register a change listener
+  onChange(listener) {
+    this.changeEmitter.on('change', listener);
+  }
+  // Emit change event
+  emitChange(change) {
+    this.changeEmitter.emit('change', change);
+  }
+  // WebSocket support (stub, to be integrated with server)
+  setWebSocketServer(wss) {
+    this.wss = wss;
+  }
+  notifyWebSocketClients(message) {
+    if (this.wss) {
+      this.wss.clients.forEach(client => {
+        if (client.readyState === 1) {
+          client.send(JSON.stringify(message));
+        }
+      });
+    }
   }
 }
 
-module.exports = DesignDocumentTool;
+module.exports = new DesignDocumentTool(); 

@@ -28,6 +28,9 @@ const SitePolisherTool = require('./site-polisher-tool');
 const AuthenticatedUserAnalyzerTool = require('./authenticated-user-analyzer-tool');
 const WooCommerceManagerTool = require('./woocommerce-manager-tool');
 const GeodirectoryTool = require('./geodirectory-tool');
+const ContextManagerTool = require('./context-manager-tool');
+const VisualPreviewTool = require('./visual-preview-tool');
+const SiteAnalyzerTool = require('./site-analyzer-tool');
 
 // Helper Tools
 const SiteInfoTool = require('./site-info-tool');
@@ -41,6 +44,9 @@ const ThemeCustomizerTool = require('./theme-customizer-tool');
 const UserManagerTool = require('./user-manager-tool');
 const SettingsManagerTool = require('./settings-manager-tool');
 const SeoManagerTool = require('./seo-manager-tool');
+
+// New Workflow Execution Tool
+const WorkflowExecutionTool = require('./workflow-execution-tool');
 
 // Tool classes for lazy initialization
 const ToolClasses = {
@@ -71,6 +77,9 @@ const ToolClasses = {
   AuthenticatedUserAnalyzerTool,
   WooCommerceManagerTool,
   GeodirectoryTool,
+  ContextManagerTool,
+  VisualPreviewTool,
+  SiteAnalyzerTool,
   
   // Helper Tools
   SiteInfoTool,
@@ -83,7 +92,10 @@ const ToolClasses = {
   ThemeCustomizerTool,
   UserManagerTool,
   SettingsManagerTool,
-  SeoManagerTool
+  SeoManagerTool,
+  
+  // New Workflow Execution Tool
+  WorkflowExecutionTool
 };
 
 // Store tool instances
@@ -320,6 +332,71 @@ function getBasicToolsMetadata() {
           required: ["action"]
         }
       }
+    },
+    {
+      type: "function",
+      function: {
+        name: "wordpress_context_manager",
+        description: "Centralized tool for maintaining context across MCP operations",
+        parameters: {
+          type: "object",
+          properties: {
+            action: {
+              type: "string",
+              description: "Action to perform (getContext, updateContext, mergeContexts, trackChange, createContextCheckpoint, rollbackToCheckpoint, diffContexts, validateContext, clearContextCache)",
+              enum: ["getContext", "updateContext", "mergeContexts", "trackChange", "createContextCheckpoint", "rollbackToCheckpoint", "diffContexts", "validateContext", "clearContextCache"]
+            },
+            section: {
+              type: "string",
+              description: "Specific context section to act on"
+            },
+            session_id: {
+              type: "string",
+              description: "Session ID for context caching"
+            }
+          },
+          required: ["action"]
+        }
+      }
+    },
+    {
+      type: "function",
+      function: {
+        name: "wordpress_visual_preview",
+        description: "Generate visual representations of WordPress sites and compare changes",
+        parameters: {
+          type: "object",
+          properties: {
+            action: {
+              type: "string",
+              description: "Action to perform (screenshot, compare, diff, preview)",
+              enum: ["screenshot", "compare", "diff", "preview"]
+            },
+            url: {
+              type: "string",
+              description: "URL of the WordPress site to capture"
+            },
+            viewport: {
+              type: "string",
+              description: "Viewport to use (mobile, tablet, desktop)",
+              enum: ["mobile", "tablet", "desktop"]
+            },
+            fullPage: {
+              type: "boolean",
+              description: "Whether to capture the full page or just the viewport"
+            },
+            beforeUrl: {
+              type: "string",
+              description: "URL of the WordPress site to use as 'before' state for comparison"
+            },
+            afterUrl: {
+              type: "string", 
+              description: "URL of the WordPress site to use as 'after' state for comparison"
+            }
+          },
+          required: ["action"]
+        }
+      }
     }
   ];
 }
@@ -412,5 +489,6 @@ module.exports = {
   getToolByName,
   
   // Individual tool class exports
-  ...ToolClasses
+  ...ToolClasses,
+  WorkflowExecutionTool
 }; 

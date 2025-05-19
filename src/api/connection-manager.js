@@ -30,6 +30,13 @@ class ConnectionManager {
     this._apiClientTimestamps = {};
     this._browserClientTimestamps = {};
     
+    this._apiRequestQueue = [];
+    this._browserRequestQueue = [];
+    this._apiActiveRequests = 0;
+    this._browserActiveRequests = 0;
+    this.maxConcurrentApiRequests = config.connections?.maxConcurrentApiRequests || 3;
+    this.maxConcurrentBrowserRequests = config.connections?.maxConcurrentBrowserRequests || 1;
+    
     logger.info('Connection manager initialized', {
       maxApiConnections: this.maxPoolSize.api,
       maxBrowserConnections: this.maxPoolSize.browser
@@ -246,6 +253,58 @@ class ConnectionManager {
     }
     
     return closedCount;
+  }
+
+  /**
+   * Batch API requests with concurrency control
+   * @param {Function} fn - Async function to execute
+   * @returns {Promise<*>}
+   */
+  async batchApiRequest(fn) {
+    return new Promise((resolve, reject) => {
+      this._apiRequestQueue.push({ fn, resolve, reject });
+      this._processApiQueue();
+    });
+  }
+
+  async _processApiQueue() {
+    if (this._apiActiveRequests >= this.maxConcurrentApiRequests) return;
+    const next = this._apiRequestQueue.shift();
+    if (!next) return;
+    this._apiActiveRequests++;
+    next.fn()
+      .then(result => next.resolve(result))
+      .catch(err => next.reject(err))
+      .finally(() => {
+        this._apiActiveRequests--;
+        this._processApiQueue();
+      });
+  }
+
+  /**
+   * Batch browser requests with concurrency control
+   * @param {Function} fn - Async function to execute
+   * @returns {Promise<*>}
+   */
+  async batchBrowserRequest(fn) {
+    return new Promise((resolve, reject) => {
+      this._browserRequestQueue.push({ fn, resolve, reject });
+      this._processBrowserQueue();
+    });
+  }
+
+  async _processBrowserQueue() {
+    if (this._browserActiveRequests >= this.maxConcurrentBrowserRequests) return;
+    const next = this._browserRequestQueue.shift();
+    if (!next) return;
+    this._browserActiveRequests++;
+    next.fn()
+      .then(result => next.resolve(result))
+      .catch(err => next.reject(err))
+      .finally(() => {
+        this._browserActiveRequests--;
+        this._processBrowserQueue();
+      });
   }
 }
 

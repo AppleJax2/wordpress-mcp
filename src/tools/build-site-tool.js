@@ -5,12 +5,14 @@
 const BaseTool = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 const WordPressBrowser = require('../browser/browser');
+const { StepwiseExecutionMixin } = require('./base-tool');
 
 class BuildSiteTool extends BaseTool {
   constructor() {
     super('build_site_tool', 'Automates the process of building a complete WordPress site from scratch');
     this.api = new WordPressAPI();
     this.browser = new WordPressBrowser();
+    this.stepwise = new StepwiseExecutionMixin();
   }
   
   /**
@@ -88,48 +90,35 @@ class BuildSiteTool extends BaseTool {
     // Store the build session
     await this.storeBuildSession(buildSession);
     
-    // Execute each step in the plan
-    let allSuccessful = true;
-    
-    for (let i = 0; i < buildPlan.steps.length; i++) {
-      const step = buildPlan.steps[i];
-      
-      // Update current step
-      buildSession.currentStep = i;
-      await this.updateBuildSession(buildSession);
-      
-      // Execute the step
+    // Use StepwiseExecutionMixin for stepwise execution
+    this.stepwise.initStepwiseExecution(buildPlan.steps, {});
+    const stepExecutor = async (step, context, stepIndex) => {
+      // Optionally emit progress to dashboard here
       const stepResult = await this.executeStep(step, buildPlan);
-      
-      // Record step result
-      buildSession.steps.push({
-        ...step,
-        result: stepResult
-      });
-      
-      if (!stepResult.success) {
-        allSuccessful = false;
-        
-        // Update build session status
-        buildSession.status = 'failed';
-        buildSession.endTime = new Date().toISOString();
-        buildSession.error = stepResult.message;
-        await this.updateBuildSession(buildSession);
-        
-        return {
-          success: false,
-          message: `Build failed at step: ${step.name}`,
-          error: stepResult.message,
-          buildSession
-        };
-      }
+      // Optionally update context if needed
+      return { ...stepResult, context };
+    };
+    const { context: finalContext, progress } = await this.stepwise.executeSteps(stepExecutor);
+    // Determine build status
+    const failedStep = progress.find(p => p.result && p.result.success === false);
+    if (failedStep) {
+      buildSession.status = 'failed';
+      buildSession.endTime = new Date().toISOString();
+      buildSession.error = failedStep.result.message;
+      await this.updateBuildSession(buildSession);
+      this.stepwise.cleanupStepwiseSession();
+      return {
+        success: false,
+        message: `Build failed at step: ${failedStep.step.name}`,
+        error: failedStep.result.message,
+        buildSession
+      };
     }
-    
     // Update build session status
     buildSession.status = 'completed';
     buildSession.endTime = new Date().toISOString();
     await this.updateBuildSession(buildSession);
-    
+    this.stepwise.cleanupStepwiseSession();
     return {
       success: true,
       message: 'Site built successfully',

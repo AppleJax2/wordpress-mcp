@@ -59,6 +59,20 @@ module.exports = {
     maxContextTokens: parseInt(process.env.OPENAI_MAX_CONTEXT_TOKENS || '128000', 10),
   },
   
+  // Resource Tracking Configuration
+  resourceTracking: {
+    enabled: process.env.RESOURCE_TRACKING_ENABLED !== 'false',
+    saveIntervalMs: parseInt(process.env.RESOURCE_SAVE_INTERVAL_MS || '300000', 10), // 5 minutes in ms
+    samplingIntervalMs: parseInt(process.env.RESOURCE_SAMPLING_INTERVAL_MS || '1000', 10), // 1 second in ms
+    maxOperations: parseInt(process.env.RESOURCE_MAX_OPERATIONS || '1000', 10), // Max operations to track
+    thresholds: {
+      cpu: parseInt(process.env.RESOURCE_THRESHOLD_CPU || '80', 10), // CPU usage percentage
+      memory: parseInt(process.env.RESOURCE_THRESHOLD_MEMORY || '80', 10), // Memory usage percentage
+      responseTime: parseInt(process.env.RESOURCE_THRESHOLD_RESPONSE_TIME || '1000', 10), // Response time in ms
+      operationTime: parseInt(process.env.RESOURCE_THRESHOLD_OPERATION_TIME || '10000', 10) // Operation time in ms
+    }
+  },
+  
   // Subscription Plans
   plans: {
     shapeshiftBasic: {
