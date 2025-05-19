@@ -28,7 +28,7 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
 COPY package*.json ./
 
 # Install dependencies with clean install to ensure deterministic builds
-RUN npm ci --only=production --no-audit
+RUN npm ci --only=production --no-audit --legacy-peer-deps
 
 # Copy application code
 COPY . .
