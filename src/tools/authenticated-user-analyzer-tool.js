@@ -2,7 +2,7 @@
  * WordPress Authenticated User Analyzer Tool
  * Maps and analyzes the experience of logged-in users from signup to account management
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 const logger = require('../utils/logger');
 

@@ -7,7 +7,7 @@
  * @module tools/context-manager-tool
  */
 
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const logger = require('../utils/logger');
 const contextMiddleware = require('../utils/context-middleware');
 const { v4: uuidv4 } = require('uuid');

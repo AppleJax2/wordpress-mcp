@@ -2,7 +2,7 @@
  * Design Analyzer Tool
  * Analyzes site design, provides critique and improvement recommendations
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 const WordPressBrowser = require('../browser/browser');
 

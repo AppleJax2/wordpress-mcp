@@ -2,7 +2,7 @@
  * Form Analysis Tool
  * Evaluates forms for usability and conversion optimization
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 const WordPressBrowser = require('../browser/browser');
 const logger = require('../utils/logger');

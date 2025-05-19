@@ -2,7 +2,7 @@
  * WordPress Settings Manager Tool
  * For managing core WordPress settings via REST API and browser automation
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 const WordPressBrowser = require('../browser/browser');
 

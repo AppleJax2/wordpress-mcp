@@ -2,7 +2,7 @@
  * Divi Builder Tool
  * Advanced page building with the Divi framework
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 const WordPressBrowser = require('../browser/browser');
 

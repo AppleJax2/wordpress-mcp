@@ -3,7 +3,7 @@
  * 
  * Analyzes content quality, readability, SEO, and engagement metrics
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const axios = require('axios');
 const { JSDOM } = require('jsdom'); // This would need to be installed
 const fetch = require('node-fetch');

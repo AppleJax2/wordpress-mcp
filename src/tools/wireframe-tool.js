@@ -2,7 +2,7 @@
  * Wireframe Tool
  * Generates ASCII wireframe layouts for WordPress pages
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 const WordPressBrowser = require('../browser/browser');
 

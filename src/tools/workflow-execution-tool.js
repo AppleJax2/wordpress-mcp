@@ -1,4 +1,4 @@
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const { createSuccessResponse, createErrorResponse } = require('../utils/response-formatter');
 const logger = require('../utils/logger');
 const LRU = require('lru-cache');

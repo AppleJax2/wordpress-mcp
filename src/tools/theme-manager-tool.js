@@ -5,7 +5,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const fetch = require('node-fetch');
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 const WordPressBrowser = require('../browser/browser');
 

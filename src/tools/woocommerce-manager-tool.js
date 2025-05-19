@@ -2,7 +2,7 @@
  * WooCommerce Manager Tool
  * Comprehensive tool for managing WooCommerce products, orders, customers, and store settings
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 const WordPressBrowser = require('../browser/browser');
 

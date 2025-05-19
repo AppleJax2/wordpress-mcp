@@ -2,7 +2,7 @@
  * Implement Modification Tool
  * Executes planned modifications to WordPress sites
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 const WordPressBrowser = require('../browser/browser');
 

@@ -1,4 +1,4 @@
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressBrowser = require('../browser/browser');
 
 class NavigationOptimizerTool extends BaseTool {

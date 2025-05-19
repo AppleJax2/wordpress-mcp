@@ -8,7 +8,7 @@
  * @module tools/site-analyzer-tool
  */
 
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const logger = require('../utils/logger');
 const { createSuccessResponse, createErrorResponse } = require('../utils/response-formatter');
 const _ = require('lodash');

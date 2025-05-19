@@ -2,7 +2,7 @@
  * Business Plan Tool
  * Creates and manages business plans and monetization strategies for WordPress sites
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 
 class BusinessPlanTool extends BaseTool {

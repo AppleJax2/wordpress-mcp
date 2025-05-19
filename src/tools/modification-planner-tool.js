@@ -2,7 +2,7 @@
  * Modification Planner Tool
  * Plans and documents modifications to WordPress sites
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 
 class ModificationPlannerTool extends BaseTool {

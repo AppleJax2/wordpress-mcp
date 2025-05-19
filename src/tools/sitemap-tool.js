@@ -2,7 +2,7 @@
  * SiteMapperTool
  * Creates a comprehensive map of a WordPress site including all pages, posts, media, and their relationships
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 const { createGzip } = require('zlib');
 const { promisify } = require('util');

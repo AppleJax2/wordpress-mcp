@@ -2,7 +2,7 @@
  * WordPress User Manager Tool
  * Comprehensive user management for WordPress sites
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 const logger = require('../utils/logger');
 

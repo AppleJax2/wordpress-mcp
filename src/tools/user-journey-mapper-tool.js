@@ -2,7 +2,7 @@
  * User Journey Mapper Tool
  * Maps typical user paths through the site and identifies improvement opportunities
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 const WordPressBrowser = require('../browser/browser');
 const logger = require('../utils/logger');

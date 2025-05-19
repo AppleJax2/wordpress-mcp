@@ -2,7 +2,7 @@
  * SEO Manager Tool
  * Manages SEO settings, sitemaps, and metadata for WordPress
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 const WordPressBrowser = require('../browser/browser');
 

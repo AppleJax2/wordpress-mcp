@@ -2,7 +2,7 @@
  * Inspiration Tool
  * Generates design and content inspiration for WordPress sites
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 
 class InspirationTool extends BaseTool {

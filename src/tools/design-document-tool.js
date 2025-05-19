@@ -7,7 +7,7 @@
  * @module tools/design-document-tool
  */
 
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const { fetchPage, executeAction, executeRestRequest } = require('../browser/utils');
 const { createErrorResponse, createSuccessResponse } = require('../utils/response-formatter');
 const logger = require('../utils/logger');
@@ -907,4 +907,4 @@ class DesignDocumentTool extends BaseTool {
   }
 }
 
-module.exports = new DesignDocumentTool(); 
+module.exports = DesignDocumentTool; 

@@ -2,7 +2,7 @@
  * Full Hierarchy Tool
  * Maps the complete site structure and content hierarchy
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 
 class FullHierarchyTool extends BaseTool {

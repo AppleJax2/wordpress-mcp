@@ -2,7 +2,7 @@
  * Build Site Tool
  * Automates the process of building a complete WordPress site from scratch
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 const WordPressBrowser = require('../browser/browser');
 const { StepwiseExecutionMixin } = require('./base-tool');

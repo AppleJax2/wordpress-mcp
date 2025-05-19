@@ -2,7 +2,7 @@
  * Theme Customizer Tool
  * Customize WordPress themes, with special support for Divi
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 const WordPressBrowser = require('../browser/browser');
 

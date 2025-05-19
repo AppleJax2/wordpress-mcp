@@ -2,7 +2,7 @@
  * Configuration Tool
  * Manages global site configuration and settings
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 
 class ConfigurationTool extends BaseTool {

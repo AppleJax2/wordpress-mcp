@@ -8,7 +8,7 @@
  * @module tools/template-tool
  */
 
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const logger = require('../utils/logger');
 const { ERROR_CODES } = require('../utils/response-formatter');
 

@@ -2,7 +2,7 @@
  * Theme Picker Tool
  * Analyzes and recommends WordPress themes based on site requirements
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 
 class ThemePickerTool extends BaseTool {

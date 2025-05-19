@@ -2,7 +2,7 @@
  * Content Manager Tool
  * Comprehensive tool for managing WordPress pages and posts
  */
-const BaseTool = require('./base-tool');
+const { BaseTool } = require('./base-tool');
 const WordPressAPI = require('../api/wordpress');
 const WordPressBrowser = require('../browser/browser');
 
