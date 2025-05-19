@@ -10,7 +10,6 @@
 
 const logger = require('./logger');
 const { createErrorResponse } = require('./response-formatter');
-const designDocumentTool = require('../tools/design-document-tool');
 
 /**
  * Validates that a design doc has the required structure
@@ -85,7 +84,7 @@ async function ensureContext(args, context) {
       userId: args.user_id,
       siteId: args.site_id
     });
-    
+    const designDocumentTool = require('../tools/design-document-tool');
     try {
       const docResponse = await designDocumentTool.getDesignDoc({
         user_id: args.user_id,
@@ -142,7 +141,7 @@ async function updateContext(updatedDoc, args, context) {
       userId: args.user_id,
       siteId: args.site_id
     });
-    
+    const designDocumentTool = require('../tools/design-document-tool');
     // Update context
     if (!context) {
       context = {};

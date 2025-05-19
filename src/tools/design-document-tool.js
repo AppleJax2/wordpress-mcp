@@ -11,7 +11,6 @@ const { BaseTool } = require('./base-tool');
 const { fetchPage, executeAction, executeRestRequest } = require('../browser/utils');
 const { createErrorResponse, createSuccessResponse } = require('../utils/response-formatter');
 const logger = require('../utils/logger');
-const VisualPreviewTool = require('./visual-preview-tool');
 const ThemeManagerTool = require('./theme-manager-tool');
 const PluginManagerTool = require('./plugin-manager-tool');
 const ContextManagerTool = require('./context-manager-tool');
@@ -816,6 +815,9 @@ class DesignDocumentTool extends BaseTool {
    * @param {Object} context
    */
   async generateVersionVisualDiff(args, context) {
+    // Require VisualPreviewTool here to avoid circular dependency
+    const VisualPreviewTool = require('./visual-preview-tool');
+    
     try {
       const { user_id, site_id, version_a, version_b, url, viewport = 'desktop' } = args;
       if (!user_id || !site_id || !version_a || !version_b || !url) {
