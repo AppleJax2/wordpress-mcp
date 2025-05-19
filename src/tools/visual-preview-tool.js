@@ -818,4 +818,4 @@ class VisualPreviewTool extends BaseTool {
   }
 }
 
-module.exports = VisualPreviewTool; 
+module.exports = new VisualPreviewTool(); 
