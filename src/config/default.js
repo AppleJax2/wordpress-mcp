@@ -4,7 +4,7 @@
 module.exports = {
   // WordPress Site Configuration
   wordpress: {
-    siteUrl: process.env.WP_SITE_URL || 'https://example.com',
+    siteUrl: process.env.WP_SITE_URL || '',
     username: process.env.WP_USERNAME || '',
     appPassword: process.env.WP_APP_PASSWORD || '',
     mainPassword: process.env.WP_MAIN_PASSWORD || '',

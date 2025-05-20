@@ -31,7 +31,7 @@ const config = {
 // Validate required configuration
 const { wordpress, connections } = config;
 if (!wordpress.siteUrl) {
-  console.warn('WARNING: WP_SITE_URL not set, using default:', wordpress.siteUrl);
+  console.info('Note: No default WP_SITE_URL set. Expected to be provided by client on each request.');
 }
 
 // WordPress credentials warning suppressed since they are provided per-request by the plugin

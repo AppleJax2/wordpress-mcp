@@ -4,6 +4,10 @@
  * This script provides a simple interface for using Tanuki tools
  * directly from the command line or Node.js scripts.
  * 
+ * NOTE: This interactive CLI is intended for DEVELOPMENT USE ONLY.
+ * It should not be used in production deployments as it requires
+ * user interaction which is not suitable for services like Render.
+ *
  * Usage:
  * - Passing tools directly: node mcp-wrapper.js wordpress_site_info '{"param": "value"}'
  * - Interactive mode: node mcp-wrapper.js

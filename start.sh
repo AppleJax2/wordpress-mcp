@@ -61,44 +61,18 @@ echo "Running with SMITHERY=$SMITHERY"
 # Ensure we're in the correct directory
 cd /app
 
-# Check for required environment variables
+# Check for required environment variables - without hardcoded defaults
 if [ -z "$WP_SITE_URL" ]; then
-  echo "WARNING: WP_SITE_URL not set, using default: https://visitingvet.com"
-  export WP_SITE_URL="https://visitingvet.com"
+  echo "Note: WP_SITE_URL not set. Site URLs should be passed dynamically by clients."
 fi
 
 # Default connection settings for production use
 export CONNECTION_TIMEOUT=${CONNECTION_TIMEOUT:-30000}
 export CLEANUP_INTERVAL_MS=${CLEANUP_INTERVAL_MS:-300000}
 
-# Start the HTTP server in the background
+# Start the HTTP server
 echo "Starting HTTP server on port $PORT..."
-node src/index.js &
-HTTP_SERVER_PID=$!
+node src/index.js
 
-# Check if server started successfully
-sleep 2
-if ! kill -0 $HTTP_SERVER_PID 2>/dev/null; then
-  echo "ERROR: HTTP server failed to start. Check logs for details."
-  exit 1
-fi
-
-echo "HTTP server started with PID $HTTP_SERVER_PID"
-
-# Start the MCP wrapper in the foreground
-echo "Starting MCP wrapper..."
-node mcp-wrapper.js
-
-# Capture exit code of MCP wrapper
-MCP_EXIT_CODE=$?
-
-# If the MCP wrapper exited cleanly, keep the HTTP server running
-# This is needed for long-running deployments on platforms like Render.com
-if [ $MCP_EXIT_CODE -eq 0 ]; then
-  echo "MCP wrapper exited successfully (code 0). HTTP server (PID $HTTP_SERVER_PID) will continue running."
-  wait $HTTP_SERVER_PID
-else
-  echo "MCP wrapper exited with code $MCP_EXIT_CODE. Stopping HTTP server..."
-  kill $HTTP_SERVER_PID
-  exit $MCP_EXIT_CODE
-fi
+# The script now runs the HTTP server in the foreground instead of running the interactive CLI
+# This makes it suitable for long-running deployments on platforms like Render.com
